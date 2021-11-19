@@ -11,7 +11,8 @@ project('canister/core', 'cpp',
 compiler = meson.get_compiler('cpp')
 lib_dir = meson.current_source_dir() + '/lib'
 sources = [
-
+	'src/Server.cpp',
+	'src/static/Canister.cpp'
 ]
 
 run_command('./configure.sh', check: true)
