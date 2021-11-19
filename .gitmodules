@@ -1,0 +1,18 @@
+[submodule "vendor/json"]
+	path = vendor/json
+	url = https://github.com/nlohmann/json.git
+[submodule "uws"]
+	path = uws
+	url = https://github.com/uNetworking/uWebSockets.git
+[submodule "vendor/uws"]
+	path = vendor/uws
+	url = https://github.com/uNetworking/uWebSockets.git
+[submodule "vendor/validator"]
+	path = vendor/validator
+	url = https://github.com/pboettch/json-schema-validator.git
+[submodule "vendor/sha2"]
+	path = vendor/sha2
+	url = https://github.com/okdshin/PicoSHA2.git
+[submodule "vendor/curl"]
+	path = vendor/curl
+	url = https://github.com/jpbarrette/curlpp.git
