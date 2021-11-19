@@ -1,21 +1,62 @@
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
+AlignConsecutiveMacros: None
+AlignEscapedNewlines: Right
+AlignTrailingComments: False
+AllowAllArgumentsOnNextLine: False
+AllowAllConstructorInitializersOnNextLine: False
+AllowAllParametersOfDeclarationOnNextLine: False
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: False
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Empty
+AllowShortLoopsOnASingleLine: False
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: False
+AlwaysBreakTemplateDeclarations: Yes
 BasedOnStyle: WebKit
-Standard: c++20
-UseTab: Always
-IndentWidth: 4
-TabWidth: 4
+BinPackArguments: False
+BinPackParameters: False
+BreakBeforeBraces: Attach
+BreakBeforeTernaryOperators: True
+BreakConstructorInitializers: BeforeComma
+BreakStringLiterals: False
 ColumnLimit: 0
-KeepEmptyLinesAtTheStartOfBlocks: false
-PointerBindsToType: false
+CompactNamespaces: False
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
+Cpp11BracedListStyle: False
+PointerAlignment: Right
+IncludeBlocks: Preserve
+IndentCaseLabels: True
+IndentGotoLabels: False
+IndentPPDirectives: BeforeHash
+IndentWidth: 4
+KeepEmptyLinesAtTheStartOfBlocks: False
+MaxEmptyLinesToKeep: 1
+NamespaceIndentation: All
+ReflowComments: False
+SortIncludes: True
+SortUsingDeclarations: True
+SpaceAfterCStyleCast: False
+SpaceAfterLogicalNot: False
+SpaceAfterTemplateKeyword: False
+SpaceBeforeAssignmentOperators: True
+SpaceBeforeCpp11BracedList: False
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: True
+SpaceBeforeSquareBrackets: False
+SpaceInEmptyBlock: False
+SpaceInEmptyParentheses: False
 SpacesBeforeTrailingComments: 1
-BreakBeforeBraces: Custom
-BraceWrapping:
-    AfterClass: false
-    AfterControlStatement: false
-    AfterEnum: false
-    AfterFunction: false
-    AfterNamespace: false
-    AfterStruct: false
-    AfterUnion: false
-    BeforeCatch: false
-    BeforeElse: false
-    IndentBraces: true
+SpacesInAngles: False
+SpacesInCStyleCastParentheses: False
+SpacesInConditionalStatement: False
+SpacesInContainerLiterals: False
+SpacesInParentheses: False
+SpacesInSquareBrackets: False
+Standard: c++20
+TabWidth: 4
+UseTab: Always
