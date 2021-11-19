@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+if [[ -d "lib" ]]; then
+	exit 0
+fi
+
 command git submodule update --init --recursive
 command rm -rf lib/ && mkdir -p lib/
 
