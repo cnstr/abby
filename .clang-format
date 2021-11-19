@@ -1,0 +1,21 @@
+BasedOnStyle: WebKit
+Standard: c++20
+UseTab: Always
+IndentWidth: 4
+TabWidth: 4
+ColumnLimit: 0
+KeepEmptyLinesAtTheStartOfBlocks: false
+PointerBindsToType: false
+SpacesBeforeTrailingComments: 1
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterClass: false
+    AfterControlStatement: false
+    AfterEnum: false
+    AfterFunction: false
+    AfterNamespace: false
+    AfterStruct: false
+    AfterUnion: false
+    BeforeCatch: false
+    BeforeElse: false
+    IndentBraces: true
