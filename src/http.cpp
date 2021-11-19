@@ -1,14 +1,11 @@
 #include <canister.h>
-#include <uws/App.h>
-#include <nlohmann/json.hpp>
-#include "static/Canister.hpp"
 
-int main() {
+uWS::App canister::http::http_server() {
 	auto server = uWS::App();
 	server.get("/healthz", [](uWS::HttpResponse<false> *res, uWS::HttpRequest *req) {
 		auto json = nlohmann::json({
 			{ "status", "OK" },
-			{ "timestamp", Canister::timestamp() }
+			{ "timestamp", canister::util::timestamp() },
 		});
 
 		res->writeHeader("Content-Type", "application/json");
@@ -23,5 +20,5 @@ int main() {
 		}
 	});
 
-	server.run();
-}
+	return server;
+};
