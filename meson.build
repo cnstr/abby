@@ -13,6 +13,7 @@ lib_dir = meson.current_source_dir() + '/lib'
 sources = [
 	'src/canister.cpp',
 	'src/http.cpp',
+	'src/log.cpp',
 	'src/util.cpp'
 ]
 

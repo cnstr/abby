@@ -14,9 +14,9 @@ uWS::App canister::http::http_server() {
 
 	server.listen(8080, [](auto *socket) {
 		if (socket) {
-			std::cout << "[cnstr] Running" << std::endl;
+			canister::log::info("http_server", "running successfully");
 		} else {
-			std::cerr << "[cnstr] Failed to create Socket" << std::endl;
+			canister::log::error("http_server", "failed to bind to socket");
 		}
 	});
 
