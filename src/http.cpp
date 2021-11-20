@@ -4,11 +4,12 @@ uWS::App canister::http::http_server() {
 	auto server = uWS::App();
 	server.get("/healthz", [](uWS::HttpResponse<false> *res, __attribute__((unused)) uWS::HttpRequest *req) {
 		auto json = nlohmann::json({
-			{ "status", "OK" },
+			{ "status", "200 OK" },
 			{ "timestamp", canister::util::timestamp() },
 		});
 
 		res->writeHeader("Content-Type", "application/json");
+		res->writeStatus("200 OK");
 		res->end(json.dump());
 	});
 
