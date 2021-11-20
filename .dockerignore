@@ -1,0 +1,11 @@
+lib/
+build/
+.git/
+.vscode/
+container/
+.clang-format
+.dockerignore
+.gitignore
+.gitmodules
+LICENSE
+README.md
