@@ -8,32 +8,28 @@
 #include <uws/App.h>
 
 namespace canister {
-	class util {
-	public:
-		static std::string timestamp();
+	namespace util {
+		std::string timestamp();
+	}
+
+	namespace log {
+		void info(const std::string location, const std::string message);
+		void error(const std::string location, const std::string message);
 	};
 
-	class log {
-	public:
-		static void info(const std::string location, const std::string message);
-		static void error(const std::string location, const std::string message);
+	namespace http {
+		uWS::App http_server();
+		void fetch_release(const std::string repo_url);
+		void fetch_packages(const std::string repo_url);
+		void fetch_dist_release(const std::string repo_url, const std::string dist_name);
+		void fetch_dist_packages(const std::string repo_url, const std::string dist_name, const std::string suite_name);
 	};
 
-	class http {
-	public:
-		static uWS::App http_server();
-		static void fetch_release(const std::string repo_url);
-		static void fetch_packages(const std::string repo_url);
-		static void fetch_dist_release(const std::string repo_url, const std::string dist_name);
-		static void fetch_dist_packages(const std::string repo_url, const std::string dist_name, const std::string suite_name);
-	};
-
-	class compress {
-	public:
-		static void gz_extract(const std::string archive_path, const std::string cache_path);
-		static void xz_extract(const std::string archive_path, const std::string cache_path);
-		static void bz2_extract(const std::string archive_path, const std::string cache_path);
-		static void lzma_extract(const std::string archive_path, const std::string cache_path);
-		static void zstd_extract(const std::string archive_path, const std::string cache_path);
+	namespace compress {
+		void gz_extract(const std::string archive_path, const std::string cache_path);
+		void xz_extract(const std::string archive_path, const std::string cache_path);
+		void bz2_extract(const std::string archive_path, const std::string cache_path);
+		void lzma_extract(const std::string archive_path, const std::string cache_path);
+		void zstd_extract(const std::string archive_path, const std::string cache_path);
 	};
 };
