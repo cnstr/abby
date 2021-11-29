@@ -1,5 +1,60 @@
 #include <canister.h>
 
+void canister::decompress::bz2(const std::string id, const std::string archive, const std::string cache) {
+	char output_buffer[4096];
+	FILE *const file_in = fopen(archive.c_str(), "rb");
+	FILE *const file_out = fopen(cache.c_str(), "wb+");
+
+	if (!file_in) {
+		fclose(file_out);
+		throw std::runtime_error(id + " - bz2: failed to open archive at " + archive);
+	}
+
+	if (!file_out) {
+		fclose(file_in);
+		throw std::runtime_error(id + " - bz2: failed to make extract handle at " + cache);
+	}
+
+	int status = 0;
+	BZFILE *bzip_handle = BZ2_bzReadOpen(&status, file_in, 0, 0, NULL, 0);
+
+	if (status != BZ_OK) {
+		BZ2_bzReadClose(&status, bzip_handle);
+		fclose(file_out);
+		fclose(file_in);
+
+		throw std::runtime_error(id + " - bz2: invalid bzfile handle");
+	}
+
+	do {
+		int read_position = BZ2_bzRead(&status, bzip_handle, output_buffer, sizeof output_buffer);
+		if (status == BZ_OK || status == BZ_STREAM_END) {
+			fwrite(output_buffer, 1, read_position, file_out);
+		}
+	} while (status == BZ_OK);
+
+	if (status != BZ_STREAM_END) {
+		BZ2_bzReadClose(&status, &bzip_handle);
+		fclose(file_out);
+		fclose(file_in);
+
+		throw std::runtime_error(id + " - bz2: decompression error > " + BZ2_bzerror(&bzip_handle, &status));
+	}
+
+	fclose(file_out);
+	fclose(file_in);
+
+	std::ifstream cache_file(cache);
+	if (!cache_file.is_open()) {
+		throw std::runtime_error(id + " - bz2: failed to open decompressed file");
+	}
+
+	// Converts our ifstream to a string using streambuf iterators
+	auto iterator = std::istreambuf_iterator<char>(cache_file);
+	std::string cache_data = std::string(iterator, std::istreambuf_iterator<char>());
+	std::remove(archive.c_str()); // Remove the archive path when completed
+}
+
 void canister::decompress::zstd(const std::string id, const std::string archive, const std::string cache) {
 	FILE *const file_in = fopen(archive.c_str(), "rb");
 	FILE *const file_out = fopen(cache.c_str(), "wb+");

@@ -3,11 +3,13 @@
 #define UWS_HTTPRESPONSE_NO_WRITEMARK // Remove the uWebSockets header
 
 #include <chrono>
-#include <nlohmann/json.hpp>
+#include <fstream>
 #include <string>
+
+#include <bzlib.h>
+#include <nlohmann/json.hpp>
 #include <uws/App.h>
 #include <zstd.h>
-#include <fstream>
 
 namespace canister {
 	namespace util {
