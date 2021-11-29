@@ -16,7 +16,8 @@ sudo apt install \
 	libcurl4 \
 	libbz2-1.0 \
 	liblzma5 \
-	libzstd1
+	libzstd1 \
+	zlib1g
 ```
 
 **Development Dependencies**
@@ -29,7 +30,8 @@ sudo apt install \
 	libcurl4-openssl-dev \
 	libbz2-dev \
 	liblzma-dev \
-	libzstd-dev
+	libzstd-dev \
+	zlib1g-dev
 ```
 
 > Unauthorized copying of the accompanying files, via any medium is strictly prohibited. The resources attached with this license are proprietary and confidential. Copyright (C) 2021 Aerum LLC
