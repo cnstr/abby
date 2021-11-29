@@ -1,5 +1,85 @@
 #include <canister.h>
 
+void canister::decompress::gz(const std::string id, const std::string archive, const std::string cache) {
+	std::ifstream archive_file(archive.c_str());
+	if (!archive_file.is_open()) {
+		throw std::runtime_error(id + " - gz: failed to open archive at " + archive);
+	}
+
+	// Converts our ifstream to a string using streambuf iterators
+	auto iterator = std::istreambuf_iterator<char>(archive_file);
+	std::string buffer_data = std::string(iterator, std::istreambuf_iterator<char>());
+	std::string output_data;
+	size_t max_size(10000000);
+	z_stream inflate_stream;
+
+	// Zlib why do you feel a need
+	inflate_stream.zalloc = Z_NULL;
+	inflate_stream.zfree = Z_NULL;
+	inflate_stream.opaque = Z_NULL;
+	inflate_stream.next_in = Z_NULL;
+	inflate_stream.avail_in = 0;
+
+	// windowBits 15
+	// ENABLE_ZLIB_GZIP 32
+	int status = inflateInit2(&inflate_stream, 15 | 32);
+	if (status < 0) {
+		throw std::runtime_error(id + " - gz: invalid zlib handle");
+	}
+
+	std::size_t inflated_size = 0;
+	std::size_t buffer_size = buffer_data.size();
+
+	// Because of Zlib's weird pointer magic, we need to reinterpret this as a pointer first
+	inflate_stream.next_in = reinterpret_cast<z_const Bytef *>(buffer_data.data());
+	if (buffer_size > max_size || (buffer_size * 2) > max_size) {
+		inflateEnd(&inflate_stream);
+		throw std::runtime_error(id + " - gz: inflate is using too much memory");
+	}
+
+	inflate_stream.avail_in = static_cast<unsigned int>(buffer_size);
+
+	do {
+		// The string buffer needs a reference of it's next resize so it may expand to fit data
+		std::size_t next_resize = inflated_size + 2 * buffer_size;
+
+		if (next_resize > max_size) {
+			inflateEnd(&inflate_stream);
+			throw std::runtime_error(id + " - gz: inflated size exceeds maximum size");
+		}
+
+		output_data.resize(next_resize);
+
+		// Expand the size of our zLIB stream too so it can continue inflating
+		inflate_stream.avail_out = static_cast<unsigned int>(2 * buffer_size);
+		inflate_stream.next_out = reinterpret_cast<Bytef *>(&output_data[0] + inflated_size);
+
+		int inflate_status = inflate(&inflate_stream, Z_FINISH);
+
+		// If this happens we didn't reach Z_FINISH and the buffer is just dead
+		if (inflate_status != Z_STREAM_END && inflate_status != Z_OK && inflate_status != Z_BUF_ERROR) {
+			std::string error_message = inflate_stream.msg;
+			inflateEnd(&inflate_stream);
+
+			throw std::runtime_error(id + " - gz: decompression error > " + error_message);
+		}
+
+		inflated_size += (2 * buffer_size - inflate_stream.avail_out);
+	} while (inflate_stream.avail_out == 0);
+
+	inflateEnd(&inflate_stream);
+	output_data.resize(inflated_size);
+
+	// Write the data to a file
+	std::ofstream cache_file(cache.c_str());
+	if (!cache_file.is_open()) {
+		throw std::runtime_error(id + " - gz: failed to make extract handle at " + cache);
+	}
+
+	cache_file << output_data;
+	std::remove(archive.c_str()); // Remove the archive path when completed
+}
+
 void canister::decompress::bz2(const std::string id, const std::string archive, const std::string cache) {
 	char output_buffer[4096];
 	FILE *const file_in = fopen(archive.c_str(), "rb");

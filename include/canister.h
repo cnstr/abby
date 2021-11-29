@@ -9,6 +9,7 @@
 #include <bzlib.h>
 #include <nlohmann/json.hpp>
 #include <uws/App.h>
+#include <zlib.h>
 #include <zstd.h>
 
 namespace canister {

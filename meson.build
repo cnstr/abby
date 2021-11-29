@@ -31,6 +31,7 @@ executable('core', sources,
 		compiler.find_library('curlpp', dirs: lib_dir, required: true),
 		compiler.find_library('validator', dirs: lib_dir, required: true),
 		compiler.find_library('zstd', required: true),
-		compiler.find_library('bz2', required: true)
+		compiler.find_library('bz2', required: true),
+		compiler.find_library('libz', required: true)
 	]
 )
