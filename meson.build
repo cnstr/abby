@@ -12,6 +12,7 @@ compiler = meson.get_compiler('cpp')
 lib_dir = meson.current_source_dir() + '/lib'
 sources = [
 	'src/canister.cpp',
+	'src/decompress.cpp',
 	'src/http.cpp',
 	'src/log.cpp',
 	'src/util.cpp'
@@ -28,6 +29,7 @@ executable('core', sources,
 	dependencies: [
 		compiler.find_library('uws', dirs: lib_dir, required: true),
 		compiler.find_library('curlpp', dirs: lib_dir, required: true),
-		compiler.find_library('validator', dirs: lib_dir, required: true)
+		compiler.find_library('validator', dirs: lib_dir, required: true),
+		compiler.find_library('zstd', required: true)
 	]
 )

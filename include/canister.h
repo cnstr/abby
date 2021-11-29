@@ -6,6 +6,8 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <uws/App.h>
+#include <zstd.h>
+#include <fstream>
 
 namespace canister {
 	namespace util {
@@ -25,11 +27,11 @@ namespace canister {
 		void fetch_dist_packages(const std::string repo_url, const std::string dist_name, const std::string suite_name);
 	};
 
-	namespace compress {
-		void gz_extract(const std::string archive_path, const std::string cache_path);
-		void xz_extract(const std::string archive_path, const std::string cache_path);
-		void bz2_extract(const std::string archive_path, const std::string cache_path);
-		void lzma_extract(const std::string archive_path, const std::string cache_path);
-		void zstd_extract(const std::string archive_path, const std::string cache_path);
+	namespace decompress {
+		void gz(const std::string id, const std::string archive, const std::string cache);
+		void xz(const std::string id, const std::string archive, const std::string cache);
+		void bz2(const std::string id, const std::string archive, const std::string cache);
+		void lzma(const std::string id, const std::string archive, const std::string cache);
+		void zstd(const std::string id, const std::string archive, const std::string cache);
 	};
 };
