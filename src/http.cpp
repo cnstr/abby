@@ -18,10 +18,9 @@ uWS::App canister::http::http_server() {
 			.maxBackpressure = 32 * 1024, // Theoretically we should never even be hitting this limit
 
 			.upgrade = [bearer](uWS::HttpResponse<false> *res, uWS::HttpRequest *req, us_socket_context_t *context) {
-
 				const auto authorization = req->getHeader("sec-authorization");
 
-				auto data = bearer == authorization ? "Authorized": "Unauthorized";
+				auto data = bearer == authorization ? "Authorized" : "Unauthorized";
 				auto key = req->getHeader("sec-websocket-key");
 				auto protocol = req->getHeader("sec-websocket-protocol");
 				auto extensions = req->getHeader("sec-websocket-extensions");
