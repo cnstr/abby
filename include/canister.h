@@ -7,6 +7,7 @@
 #include <string>
 
 #include <bzlib.h>
+#include <lzma.h>
 #include <nlohmann/json.hpp>
 #include <uws/App.h>
 #include <zlib.h>

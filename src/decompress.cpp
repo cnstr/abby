@@ -50,7 +50,7 @@ void canister::decompress::gz(const std::string id, const std::string archive, c
 
 		output_data.resize(next_resize);
 
-		// Expand the size of our zLIB stream too so it can continue inflating
+		// Expand the size of our Zlib stream too so it can continue inflating
 		inflate_stream.avail_out = static_cast<unsigned int>(2 * buffer_size);
 		inflate_stream.next_out = reinterpret_cast<Bytef *>(&output_data[0] + inflated_size);
 
@@ -80,8 +80,103 @@ void canister::decompress::gz(const std::string id, const std::string archive, c
 	std::remove(archive.c_str()); // Remove the archive path when completed
 }
 
+void canister::decompress::xz(const std::string id, const std::string archive, const std::string cache) {
+	FILE *const file_in = fopen(archive.c_str(), "rb");
+	FILE *const file_out = fopen(cache.c_str(), "wb+");
+
+	if (!file_in) {
+		fclose(file_out);
+		throw std::runtime_error(id + " - xz: failed to open archive at " + archive);
+	}
+
+	if (!file_out) {
+		fclose(file_in);
+		throw std::runtime_error(id + " - xz: failed to make extract handle at " + cache);
+	}
+
+	lzma_stream macro_stream = LZMA_STREAM_INIT;
+	lzma_ret status = lzma_stream_decoder(&macro_stream, UINT64_MAX, LZMA_CONCATENATED);
+	lzma_stream *stream = reinterpret_cast<lzma_stream *>(&macro_stream);
+
+	switch (status) {
+		case LZMA_OK:
+			break;
+
+		case LZMA_MEM_ERROR:
+			lzma_end(stream);
+			throw std::runtime_error(id + " - xz: stream memory error");
+
+		case LZMA_OPTIONS_ERROR:
+			lzma_end(stream);
+			throw std::runtime_error(id + " - xz: stream options error");
+
+		default:
+			lzma_end(stream);
+			throw std::runtime_error(id + " - xz: unknown stream init error");
+	}
+
+	lzma_action action = LZMA_RUN;
+	uint8_t in_buf[BUFSIZ];
+	uint8_t out_buf[BUFSIZ];
+
+	stream->next_in = NULL;
+	stream->avail_in = 0;
+	stream->next_out = out_buf;
+	stream->avail_out = sizeof(out_buf);
+
+	for (;;) { // Break inside when finished
+		if (stream->avail_in == 0 && !feof(file_in)) {
+			stream->next_in = in_buf;
+			stream->avail_in = fread(in_buf, 1, sizeof(in_buf), file_in);
+
+			if (ferror(file_in)) {
+				throw std::runtime_error(id + " - xz: read error > " + strerror(errno));
+			}
+
+			if (feof(file_in)) {
+				action = LZMA_FINISH;
+			}
+		}
+
+		lzma_ret status = lzma_code(stream, action);
+		if (stream->avail_out == 0 || status == LZMA_STREAM_END) {
+			size_t write_size = sizeof(out_buf) - stream->avail_out;
+
+			if (std::fwrite(out_buf, 1, write_size, file_out) != write_size) {
+				throw std::runtime_error(id + " - xz: write error > " + strerror(errno));
+			}
+
+			stream->next_out = out_buf;
+			stream->avail_out = sizeof(out_buf);
+		}
+
+		if (status != LZMA_OK) {
+			switch (status) {
+				case LZMA_STREAM_END:
+					lzma_end(stream);
+					return;
+
+				case LZMA_MEM_ERROR:
+					lzma_end(stream);
+					throw std::runtime_error(id + " - xz: stream memory error");
+
+				case LZMA_OPTIONS_ERROR:
+					lzma_end(stream);
+					throw std::runtime_error(id + " - xz: stream options error");
+
+				default:
+					lzma_end(stream);
+					throw std::runtime_error(id + " - xz: unknown stream run error");
+			}
+		}
+	}
+
+	fclose(file_in);
+	fclose(file_out);
+}
+
 void canister::decompress::bz2(const std::string id, const std::string archive, const std::string cache) {
-	char output_buffer[4096];
+	char output_buffer[BUFSIZ];
 	FILE *const file_in = fopen(archive.c_str(), "rb");
 	FILE *const file_out = fopen(cache.c_str(), "wb+");
 
