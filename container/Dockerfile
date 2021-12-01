@@ -11,6 +11,7 @@ RUN apt-get update \
 		libbz2-dev \
 		liblzma-dev \
 		libzstd-dev \
+		zlib1g-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
 COPY . .
@@ -25,6 +26,7 @@ RUN apt-get update \
 		libbz2-1.0 \
 		liblzma5 \
 		libzstd1 \
+		zlib1g-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /build/staging/core ./
