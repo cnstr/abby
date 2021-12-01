@@ -4,7 +4,11 @@
 
 #include <chrono>
 #include <fstream>
+#include <future>
+#include <regex>
+#include <sstream>
 #include <string>
+#include <thread>
 
 #include <bzlib.h>
 #include <lzma.h>
@@ -14,14 +18,13 @@
 #include <zstd.h>
 
 namespace canister {
-	namespace util {
-		std::string timestamp();
+	namespace decompress {
+		void gz(const std::string id, const std::string archive, const std::string cache);
+		void xz(const std::string id, const std::string archive, const std::string cache);
+		void bz2(const std::string id, const std::string archive, const std::string cache);
+		void lzma(const std::string id, const std::string archive, const std::string cache);
+		void zstd(const std::string id, const std::string archive, const std::string cache);
 	}
-
-	namespace log {
-		void info(const std::string location, const std::string message);
-		void error(const std::string location, const std::string message);
-	};
 
 	namespace http {
 		uWS::App http_server();
@@ -29,13 +32,20 @@ namespace canister {
 		void fetch_packages(const std::string repo_url);
 		void fetch_dist_release(const std::string repo_url, const std::string dist_name);
 		void fetch_dist_packages(const std::string repo_url, const std::string dist_name, const std::string suite_name);
-	};
+	}
 
-	namespace decompress {
-		void gz(const std::string id, const std::string archive, const std::string cache);
-		void xz(const std::string id, const std::string archive, const std::string cache);
-		void bz2(const std::string id, const std::string archive, const std::string cache);
-		void lzma(const std::string id, const std::string archive, const std::string cache);
-		void zstd(const std::string id, const std::string archive, const std::string cache);
-	};
-};
+	namespace log {
+		void info(const std::string location, const std::string message);
+		void error(const std::string location, const std::string message);
+	}
+
+	namespace parser {
+		void parse_packages(const std::string id, const std::string content);
+		void parse_release(const std::string id, const std::string content);
+		std::map<std::string, std::string> parse_apt_kv(std::stringstream stream);
+	}
+
+	namespace util {
+		std::string timestamp();
+	}
+}

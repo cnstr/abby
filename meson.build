@@ -15,6 +15,7 @@ sources = [
 	'src/decompress.cpp',
 	'src/http.cpp',
 	'src/log.cpp',
+	'src/parser.cpp',
 	'src/util.cpp'
 ]
 
