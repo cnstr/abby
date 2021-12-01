@@ -16,3 +16,6 @@
 [submodule "vendor/curl"]
 	path = vendor/curl
 	url = https://github.com/jpbarrette/curlpp.git
+[submodule "vendor/sentry"]
+	path = vendor/sentry
+	url = https://github.com/getsentry/sentry-native.git

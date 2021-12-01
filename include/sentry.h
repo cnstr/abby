@@ -1,0 +1,1 @@
+../vendor/sentry/include/sentry.h

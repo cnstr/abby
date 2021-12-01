@@ -3,6 +3,7 @@
 #define UWS_HTTPRESPONSE_NO_WRITEMARK // Remove the uWebSockets header
 #define MANIFEST_URL "https://pull.canister.me/index-repositories.json"
 #define USER_AGENT "Canister/2.0 [Core] (+https://canister.me/go/ua)"
+#define SENTRY_DSN "https://cfa0e7d33fe245bc88460f2e16dce7b7@o982840.ingest.sentry.io/6089692"
 
 #include <chrono>
 #include <fstream>
@@ -19,6 +20,7 @@
 #include <curlpp/cURLpp.hpp>
 #include <lzma.h>
 #include <nlohmann/json.hpp>
+#include <sentry.h>
 #include <uws/App.h>
 #include <zlib.h>
 #include <zstd.h>

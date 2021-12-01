@@ -25,3 +25,11 @@ command make -j8 -C lib/curl
 
 command cp lib/curl/libcurlpp.a lib/curlpp.a
 command rm -rf lib/curl
+
+# Pending: https://github.com/getsentry/sentry-native/issues/501
+command cd vendor/sentry/external/breakpad && git checkout handler && cd -
+command cmake -Blib/sentry -Svendor/sentry -DCMAKE_BUILD_TYPE=RelWithDebInfo
+command make -j8 -C lib/sentry
+
+command cp lib/sentry/libsentry.so lib/libsentry.so
+command rm -rf lib/sentry
