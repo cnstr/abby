@@ -1,6 +1,8 @@
 #define PROJECT_NAME "canister"
 #define UWS_NO_ZLIB 1 // Disable compression on uWebSockets
 #define UWS_HTTPRESPONSE_NO_WRITEMARK // Remove the uWebSockets header
+#define MANIFEST_URL "https://pull.canister.me/index-repositories.json"
+#define USER_AGENT "Canister/2.0 [Core] (+https://canister.me/go/ua)"
 
 #include <chrono>
 #include <fstream>
@@ -11,6 +13,10 @@
 #include <thread>
 
 #include <bzlib.h>
+#include <curlpp/Easy.hpp>
+#include <curlpp/Infos.hpp>
+#include <curlpp/Options.hpp>
+#include <curlpp/cURLpp.hpp>
 #include <lzma.h>
 #include <nlohmann/json.hpp>
 #include <uws/App.h>
@@ -28,6 +34,8 @@ namespace canister {
 
 	namespace http {
 		uWS::App http_server();
+		std::list<std::string> headers();
+		std::future<nlohmann::json> manifest();
 		void fetch_release(const std::string repo_url);
 		void fetch_packages(const std::string repo_url);
 		void fetch_dist_release(const std::string repo_url, const std::string dist_name);
@@ -40,6 +48,7 @@ namespace canister {
 	}
 
 	namespace parser {
+		void parse_manifest(const nlohmann::json data, uWS::WebSocket<false, true, std::string> *ws);
 		void parse_packages(const std::string id, const std::string content);
 		void parse_release(const std::string id, const std::string content);
 		std::map<std::string, std::string> parse_apt_kv(std::stringstream stream);

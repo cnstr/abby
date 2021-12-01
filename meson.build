@@ -34,6 +34,7 @@ executable('core', sources,
 		compiler.find_library('zstd', required: true),
 		compiler.find_library('bz2', required: true),
 		compiler.find_library('libz', required: true),
-		compiler.find_library('lzma', required: true)
+		compiler.find_library('lzma', required: true),
+		compiler.find_library('curl', required: true)
 	]
 )

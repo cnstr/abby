@@ -1,5 +1,18 @@
 #include <canister.h>
 
+void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<false, true, std::string> *ws) {
+	canister::log::info("parser", "processing repository manifest");
+	for (const auto &repository : data.items()) {
+		auto object = repository.value();
+		auto message = std::string("success:") + object["slug"].get<std::string>();
+		ws->send(message, uWS::OpCode::TEXT);
+
+		for (const auto &entry : repository.value().items()) {
+			// TODO: Parse and delegate
+		}
+	}
+}
+
 void canister::parser::parse_packages(const std::string id, const std::string content) {
 	size_t start, end = 0;
 	std::vector<std::map<std::string, std::string>> packages;
