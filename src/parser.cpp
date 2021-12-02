@@ -3,6 +3,7 @@
 void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<false, true, std::string> *ws) {
 	canister::log::info("parser", "processing repository manifest");
 	std::vector<std::future<void>> tasks;
+	int success = 0, failed = 0, cached = 0;
 
 	for (const auto &repository : data.items()) {
 		auto object = repository.value();
@@ -24,18 +25,29 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 			continue;
 		}
 
-		tasks.push_back(std::async(std::launch::async, [slug, uri]() {
+		tasks.push_back(std::async(std::launch::async, [&ws, slug, uri, &success, &failed, &cached]() {
 			auto release_task = canister::http::fetch_release(slug, uri);
 			release_task.wait();
 
 			auto value = release_task.get();
-			std::cout << value << std::endl;
+			if (value == "cnstr-not-available") {
+				ws->send("failed:" + slug);
+				failed++;
+			} else if (value == "cnstr-cache-available") {
+				cached++;
+			} else {
+				success++;
+			}
 		}));
-
-
-		std::string message = "success:" + slug;
-		ws->send(message, uWS::OpCode::TEXT);
 	}
+
+	for (auto &entry : tasks) {
+		entry.wait();
+	}
+
+	ws->send("success:" + std::to_string(success), uWS::OpCode::TEXT);
+	ws->send("failed:" + std::to_string(failed), uWS::OpCode::TEXT);
+	ws->send("cached:" + std::to_string(cached), uWS::OpCode::TEXT);
 }
 
 void canister::parser::parse_packages(const std::string id, const std::string content) {

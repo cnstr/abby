@@ -168,7 +168,7 @@ std::future<std::string> canister::http::fetch_release(const std::string slug, c
 			});
 
 			std::string response = response_stream.str();
-			std::string file_path = std::filesystem::temp_directory_path().string() + "/" + file_name;
+			std::string file_path = canister::util::cache_path() + file_name;
 			std::ifstream file(file_path);
 
 			if (file.is_open()) { // If this is true that means the file exists

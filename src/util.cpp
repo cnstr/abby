@@ -16,3 +16,7 @@ bool canister::util::matched_hash(const std::string left, const std::string righ
 
 	return left_hash == right_hash;
 }
+
+std::string canister::util::cache_path() {
+	return std::filesystem::temp_directory_path().string() + "/canister/";
+}
