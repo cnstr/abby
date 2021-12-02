@@ -157,18 +157,9 @@ std::future<std::string> canister::http::fetch_release(const std::string slug, c
 		try {
 			auto response_stream = canister::http::fetch(uri + "/Release");
 
-			// Normalize filesystem names by removing slashes and dots
-			std::string file_name = (uri + "/Release").substr(uri.find("://") + 3);
-			std::transform(file_name.begin(), file_name.end(), file_name.begin(), [](char value) {
-				if (value == '.' || value == '/') {
-					return '_';
-				}
-
-				return value;
-			});
-
-			std::string response = response_stream.str();
+			std::string file_name = canister::util::safe_fs_name(uri + "/Release");
 			std::string file_path = canister::util::cache_path() + file_name;
+			std::string response = response_stream.str();
 			std::ifstream file(file_path);
 
 			if (file.is_open()) { // If this is true that means the file exists
@@ -199,5 +190,63 @@ std::future<std::string> canister::http::fetch_release(const std::string slug, c
 			sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_ERROR, "http", message.c_str()));
 			return std::string("cnstr-not-available");
 		}
+	});
+}
+
+std::future<std::string> canister::http::fetch_packages(const std::string slug, const std::string uri) {
+	return std::async(std::launch::async, [slug, uri]() {
+		std::string files[6] = {
+			"Packages.zst",
+			"Packages.xz",
+			"Packages.bz2",
+			"Packages.lzma",
+			"Packages.gz",
+			"Packages"
+		};
+
+		for (auto &file : files) {
+			auto task = std::async(std::launch::async, [file, slug, uri]() {
+				try {
+					auto response_stream = canister::http::fetch(uri + "/" + file);
+
+					std::string file_name = canister::util::safe_fs_name(uri + "/" + file);
+					std::string file_path = canister::util::cache_path() + file_name;
+					std::string response = response_stream.str();
+					std::ifstream file(file_path);
+
+					if (file.is_open()) { // If this is true that means the file exists
+						// Converts our ifstream to a string using streambuf iterators
+						std::string cached = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+						if (canister::util::matched_hash(response, cached)) {
+							return std::string("cnstr-cache-available");
+						}
+					}
+
+					// Write the response data to the file and then return the file name
+					std::ofstream out(file_path, std::ios::binary | std::ios::out);
+					out << response;
+					out.flush();
+					out.close();
+
+					return std::string(file_path);
+				} catch (curlpp::LogicError &exc) {
+					canister::log::error("http", slug + " - curl logic error: " + std::string(exc.what()));
+					return std::string("cnstr-not-available");
+				} catch (curlpp::RuntimeError &exc) {
+					canister::log::error("http", slug + " - curl runtime error: " + std::string(exc.what()));
+					return std::string("cnstr-not-available");
+				} catch (std::exception &exc) {
+					auto message = slug + " - exception: " + std::string(exc.what());
+					canister::log::error("http", message);
+
+					sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_ERROR, "http", message.c_str()));
+					return std::string("cnstr-not-available");
+				}
+			});
+
+			task.wait();
+		}
+
+		return std::string("cnstr-not-available");
 	});
 }

@@ -62,5 +62,6 @@ namespace canister {
 		std::string timestamp();
 		bool matched_hash(const std::string left, const std::string right);
 		std::string cache_path();
+		std::string safe_fs_name(const std::string token);
 	}
 }

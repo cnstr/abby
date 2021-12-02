@@ -20,3 +20,16 @@ bool canister::util::matched_hash(const std::string left, const std::string righ
 std::string canister::util::cache_path() {
 	return std::filesystem::temp_directory_path().string() + "/canister/";
 }
+
+std::string canister::util::safe_fs_name(const std::string token) {
+	std::string value = token.substr(token.find("://") + 3);
+	std::transform(value.begin(), value.end(), value.begin(), [](char value) {
+		if (value == '.' || value == '/') {
+			return '_';
+		}
+
+		return value;
+	});
+
+	return value;
+}

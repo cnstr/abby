@@ -29,18 +29,39 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 			auto release_task = canister::http::fetch_release(slug, uri);
 			release_task.wait();
 
-			auto value = release_task.get();
-			if (value == "cnstr-not-available") {
+			auto release_value = release_task.get();
+			if (release_value == "cnstr-not-available") {
 				ws->send("failed:" + slug, uWS::OpCode::TEXT);
 				failed++;
-			} else if (value == "cnstr-cache-available") {
+				return;
+			} else if (release_value == "cnstr-cache-available") {
 				cached++;
-			} else {
-				std::ifstream stream(value); // This represents the path on disk
-				std::string data = std::string((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
-				canister::parser::parse_release(slug, data);
-				success++;
+				return;
 			}
+
+			std::ifstream release_stream(release_value); // This represents the path on disk
+			std::ostringstream release;
+			release << release_stream.rdbuf();
+			canister::parser::parse_release(slug, release.str());
+
+			auto packages_task = canister::http::fetch_packages(slug, uri);
+			packages_task.wait();
+
+			auto packages_value = packages_task.get();
+			if (packages_value == "cnstr-not-available") {
+				ws->send("failed:" + slug, uWS::OpCode::TEXT);
+				failed++;
+				return;
+			} else if (packages_value == "cnstr-cache-available") {
+				cached++;
+				return;
+			}
+
+			std::ifstream packages_stream(release_value); // This represents the path on disk
+			std::ostringstream packages;
+			packages << packages_stream.rdbuf();
+			canister::parser::parse_packages(slug, packages.str());
+			success++;
 		}));
 	}
 
