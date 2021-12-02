@@ -20,6 +20,7 @@
 #include <curlpp/cURLpp.hpp>
 #include <lzma.h>
 #include <nlohmann/json.hpp>
+#include <picosha2.h>
 #include <sentry.h>
 #include <uws/App.h>
 #include <zlib.h>
@@ -38,10 +39,10 @@ namespace canister {
 		uWS::App http_server();
 		std::list<std::string> headers();
 		std::future<nlohmann::json> manifest();
-		void fetch_release(const std::string repo_url);
-		void fetch_packages(const std::string repo_url);
-		void fetch_dist_release(const std::string repo_url, const std::string dist_name);
-		void fetch_dist_packages(const std::string repo_url, const std::string dist_name, const std::string suite_name);
+		std::future<std::string> fetch_release(const std::string slug, const std::string uri);
+		std::string fetch_packages(const std::string repo_url);
+		std::string fetch_dist_release(const std::string repo_url, const std::string dist_name);
+		std::string fetch_dist_packages(const std::string repo_url, const std::string dist_name, const std::string suite_name);
 	}
 
 	namespace log {
@@ -58,5 +59,6 @@ namespace canister {
 
 	namespace util {
 		std::string timestamp();
+		bool matched_hash(const std::string left, const std::string right);
 	}
 }

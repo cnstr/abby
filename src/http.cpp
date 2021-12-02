@@ -131,3 +131,52 @@ std::future<nlohmann::json> canister::http::manifest() {
 		return data;
 	});
 }
+
+std::future<std::string> canister::http::fetch_release(const std::string slug, const std::string uri) {
+	return std::async(std::launch::async, [slug, uri]() {
+		curlpp::Easy request;
+		std::ostringstream response_stream;
+
+		request.setOpt(curlpp::options::Timeout(10));
+		request.setOpt(new curlpp::options::Url(uri + "/Release"));
+		request.setOpt(new curlpp::options::HttpHeader(canister::http::headers()));
+		request.setOpt(new curlpp::options::WriteStream(&response_stream));
+
+		request.perform();
+
+		auto http_code = curlpp::infos::ResponseCode::get(request);
+		if (http_code != 200) {
+			throw new std::runtime_error("invalid status code: " + http_code);
+		}
+
+		// Normalize filesystem names by removing slashes and dots
+		std::string file_name = (uri + "/Release").substr(uri.find("://") + 3);
+		std::transform(file_name.begin(), file_name.end(), file_name.begin(), [](char value) {
+			if (value == '.' || value == '/') {
+				return '_';
+			}
+
+			return value;
+		});
+
+		std::string response = response_stream.str();
+		std::string file_path = std::filesystem::temp_directory_path().string() + "/" + file_name;
+		std::ifstream file(file_path);
+
+		if (file.is_open()) { // If this is true that means the file exists
+			// Converts our ifstream to a string using streambuf iterators
+			std::string cached = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+			if (canister::util::matched_hash(response, cached)) {
+				return std::string("cnstr-cache-available");
+			}
+		}
+
+		// Write the response data to the file and then return the file name
+		std::ofstream out(file_path, std::ios::binary | std::ios::out);
+		out << response;
+		out.flush();
+		out.close();
+
+		return std::string(file_path);
+	});
+}

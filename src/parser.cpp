@@ -2,14 +2,39 @@
 
 void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<false, true, std::string> *ws) {
 	canister::log::info("parser", "processing repository manifest");
+	std::vector<std::future<void>> tasks;
+
 	for (const auto &repository : data.items()) {
 		auto object = repository.value();
-		auto message = std::string("success:") + object["slug"].get<std::string>();
-		ws->send(message, uWS::OpCode::TEXT);
 
-		for (const auto &entry : repository.value().items()) {
-			// TODO: Parse and delegate
+		auto slug = object["slug"].get<std::string>();
+		auto ranking = object["ranking"].get<std::int8_t>();
+		auto uri = object["uri"].get<std::string>();
+
+		// The URI needs to not have a trailing slash
+		if (uri.ends_with("/")) {
+			uri.pop_back();
 		}
+
+		// Distribution repository
+		if (object.contains("dist") && object.contains("suite")) {
+			auto dist = object["dist"].get<std::string>();
+			auto suite = object["suite"].get<std::string>();
+
+			continue;
+		}
+
+		tasks.push_back(std::async(std::launch::async, [slug, uri]() {
+			auto release_task = canister::http::fetch_release(slug, uri);
+			release_task.wait();
+
+			auto value = release_task.get();
+			std::cout << value << std::endl;
+		}));
+
+
+		std::string message = "success:" + slug;
+		ws->send(message, uWS::OpCode::TEXT);
 	}
 }
 
