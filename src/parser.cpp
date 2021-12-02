@@ -31,11 +31,14 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 
 			auto value = release_task.get();
 			if (value == "cnstr-not-available") {
-				ws->send("failed:" + slug);
+				ws->send("failed:" + slug, uWS::OpCode::TEXT);
 				failed++;
 			} else if (value == "cnstr-cache-available") {
 				cached++;
 			} else {
+				std::ifstream stream(value); // This represents the path on disk
+				std::string data = std::string((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
+				canister::parser::parse_release(slug, data);
 				success++;
 			}
 		}));
