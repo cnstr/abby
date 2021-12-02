@@ -3,7 +3,7 @@
 #define UWS_HTTPRESPONSE_NO_WRITEMARK // Remove the uWebSockets header
 #define MANIFEST_URL "https://pull.canister.me/index-repositories.json"
 #define USER_AGENT "Canister/2.0 [Core] (+https://canister.me/go/ua)"
-#define SENTRY_DSN "https://cfa0e7d33fe245bc88460f2e16dce7b7@o982840.ingest.sentry.io/6089692"
+#define SENTRY_DSN "https://2493ed76073e4cecb7738191e7e18fc8@o1033514.ingest.sentry.io/6090078"
 
 #include <chrono>
 #include <fstream>
@@ -39,8 +39,9 @@ namespace canister {
 		uWS::App http_server();
 		std::list<std::string> headers();
 		std::future<nlohmann::json> manifest();
+		std::ostringstream fetch(const std::string url);
 		std::future<std::string> fetch_release(const std::string slug, const std::string uri);
-		std::string fetch_packages(const std::string repo_url);
+		std::future<std::string> fetch_packages(const std::string slug, const std::string uri);
 		std::string fetch_dist_release(const std::string repo_url, const std::string dist_name);
 		std::string fetch_dist_packages(const std::string repo_url, const std::string dist_name, const std::string suite_name);
 	}

@@ -132,51 +132,72 @@ std::future<nlohmann::json> canister::http::manifest() {
 	});
 }
 
+std::ostringstream canister::http::fetch(const std::string url) {
+	curlpp::Easy request;
+	curlpp::Cleanup cleanup;
+	std::ostringstream response_stream;
+
+	request.setOpt(new curlpp::options::Timeout(10));
+	request.setOpt(new curlpp::options::Url(url));
+	request.setOpt(new curlpp::options::HttpHeader(canister::http::headers()));
+	request.setOpt(new curlpp::options::WriteStream(&response_stream));
+
+	request.perform();
+
+	auto http_code = curlpp::infos::ResponseCode::get(request);
+	if (http_code != 200) {
+		throw new std::runtime_error("invalid status code: " + http_code);
+	}
+
+	return response_stream;
+}
+
 std::future<std::string> canister::http::fetch_release(const std::string slug, const std::string uri) {
 	return std::async(std::launch::async, [slug, uri]() {
-		curlpp::Easy request;
-		std::ostringstream response_stream;
+		try {
+			auto response_stream = canister::http::fetch(uri + "/Release");
 
-		request.setOpt(curlpp::options::Timeout(10));
-		request.setOpt(new curlpp::options::Url(uri + "/Release"));
-		request.setOpt(new curlpp::options::HttpHeader(canister::http::headers()));
-		request.setOpt(new curlpp::options::WriteStream(&response_stream));
+			// Normalize filesystem names by removing slashes and dots
+			std::string file_name = (uri + "/Release").substr(uri.find("://") + 3);
+			std::transform(file_name.begin(), file_name.end(), file_name.begin(), [](char value) {
+				if (value == '.' || value == '/') {
+					return '_';
+				}
 
-		request.perform();
+				return value;
+			});
 
-		auto http_code = curlpp::infos::ResponseCode::get(request);
-		if (http_code != 200) {
-			throw new std::runtime_error("invalid status code: " + http_code);
-		}
+			std::string response = response_stream.str();
+			std::string file_path = std::filesystem::temp_directory_path().string() + "/" + file_name;
+			std::ifstream file(file_path);
 
-		// Normalize filesystem names by removing slashes and dots
-		std::string file_name = (uri + "/Release").substr(uri.find("://") + 3);
-		std::transform(file_name.begin(), file_name.end(), file_name.begin(), [](char value) {
-			if (value == '.' || value == '/') {
-				return '_';
+			if (file.is_open()) { // If this is true that means the file exists
+				// Converts our ifstream to a string using streambuf iterators
+				std::string cached = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+				if (canister::util::matched_hash(response, cached)) {
+					return std::string("cnstr-cache-available");
+				}
 			}
 
-			return value;
-		});
+			// Write the response data to the file and then return the file name
+			std::ofstream out(file_path, std::ios::binary | std::ios::out);
+			out << response;
+			out.flush();
+			out.close();
 
-		std::string response = response_stream.str();
-		std::string file_path = std::filesystem::temp_directory_path().string() + "/" + file_name;
-		std::ifstream file(file_path);
+			return std::string(file_path);
+		} catch (curlpp::LogicError &exc) {
+			canister::log::error("http", slug + " - curl logic error: " + std::string(exc.what()));
+			return std::string("cnstr-not-available");
+		} catch (curlpp::RuntimeError &exc) {
+			canister::log::error("http", slug + " - curl runtime error: " + std::string(exc.what()));
+			return std::string("cnstr-not-available");
+		} catch (std::exception &exc) {
+			auto message = slug + " - exception: " + std::string(exc.what());
+			canister::log::error("http", message);
 
-		if (file.is_open()) { // If this is true that means the file exists
-			// Converts our ifstream to a string using streambuf iterators
-			std::string cached = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-			if (canister::util::matched_hash(response, cached)) {
-				return std::string("cnstr-cache-available");
-			}
+			sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_ERROR, "http", message.c_str()));
+			return std::string("cnstr-not-available");
 		}
-
-		// Write the response data to the file and then return the file name
-		std::ofstream out(file_path, std::ios::binary | std::ios::out);
-		out << response;
-		out.flush();
-		out.close();
-
-		return std::string(file_path);
 	});
 }
