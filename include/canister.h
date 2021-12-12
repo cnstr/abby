@@ -16,6 +16,7 @@
 #include <bzlib.h>
 #include <curlpp/Easy.hpp>
 #include <curlpp/Infos.hpp>
+#include <curlpp/Multi.hpp>
 #include <curlpp/Options.hpp>
 #include <curlpp/cURLpp.hpp>
 #include <lzma.h>
@@ -25,6 +26,7 @@
 #include <uws/App.h>
 #include <zlib.h>
 #include <zstd.h>
+#include <uv.h>
 
 namespace canister {
 	namespace decompress {
@@ -38,10 +40,10 @@ namespace canister {
 	namespace http {
 		uWS::App http_server();
 		std::list<std::string> headers();
-		std::future<nlohmann::json> manifest();
-		std::ostringstream fetch(const std::string url);
-		std::future<std::string> fetch_release(const std::string slug, const std::string uri);
-		std::future<std::string> fetch_packages(const std::string slug, const std::string uri);
+		std::optional<nlohmann::json> manifest();
+		std::optional<std::ostringstream> fetch(const std::string url);
+		std::string fetch_release(const std::string slug, const std::string uri);
+		std::string fetch_packages(const std::string slug, const std::string uri);
 		std::string fetch_dist_release(const std::string repo_url, const std::string dist_name);
 		std::string fetch_dist_packages(const std::string repo_url, const std::string dist_name, const std::string suite_name);
 	}
