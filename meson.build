@@ -29,6 +29,7 @@ executable('core', sources,
 	],
 	dependencies: [
 		compiler.find_library('uws', dirs: lib_dir, required: true),
+		compiler.find_library('taopq', dirs: lib_dir, required: true),
 		compiler.find_library('curlpp', dirs: lib_dir, required: true),
 		compiler.find_library('sentry', dirs: lib_dir, required: true),
 		compiler.find_library('validator', dirs: lib_dir, required: true),

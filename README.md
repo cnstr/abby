@@ -16,6 +16,7 @@ sudo apt install \
 	libcurl4 \
 	libbz2-1.0 \
 	liblzma5 \
+	libpq5 \
 	libzstd1 \
 	zlib1g
 ```
@@ -30,6 +31,7 @@ sudo apt install \
 	libcurl4-openssl-dev \
 	libbz2-dev \
 	liblzma-dev \
+	libpq-dev \
 	libzstd-dev \
 	zlib1g-dev
 ```

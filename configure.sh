@@ -33,3 +33,9 @@ command make -j8 -C lib/sentry
 
 command cp lib/sentry/libsentry.so lib/libsentry.so
 command rm -rf lib/sentry
+
+command cmake -Blib/pq -Svendor/pq -DPostgreSQL_TYPE_INCLUDE_DIR=/usr/include/postgresql/
+command make -j8 -C lib/pq
+
+command cp lib/pq/libtaopq.a lib/libtaopq.a
+command rm -rf lib/pq

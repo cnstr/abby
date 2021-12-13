@@ -19,3 +19,6 @@
 [submodule "vendor/sentry"]
 	path = vendor/sentry
 	url = https://github.com/getsentry/sentry-native.git
+[submodule "vendor/pq"]
+	path = vendor/pq
+	url = https://github.com/taocpp/taopq.git
