@@ -25,48 +25,77 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 			continue;
 		}
 
-		tasks.push_back(std::async(std::launch::async, [&ws, slug, uri, &success, &failed, &cached]() {
-			auto release_task = canister::http::fetch_release(slug, uri);
-			release_task.wait();
+		std::string release_path = canister::http::fetch_release(slug, uri);
+		if (release_path == "cnstr-not-available") {
+			ws->send("failed:download_release:" + slug, uWS::TEXT);
+			failed++;
+			continue;
+		}
 
-			auto release_value = release_task.get();
-			if (release_value == "cnstr-not-available") {
-				ws->send("failed:" + slug, uWS::OpCode::TEXT);
+		std::string packages_path = canister::http::fetch_packages(slug, uri);
+		if (packages_path == "cnstr-not-available") {
+			ws->send("failed:download_packages:" + slug, uWS::TEXT);
+			failed++;
+			continue;
+		}
+
+		if (release_path == "cnstr-cache-available" && packages_path == "cnstr-cache-available") {
+			cached++;
+			continue;
+		}
+
+		if (release_path != "cnstr-cache-available") {
+			// Read files and parse with the parser
+			std::ifstream release_file(release_path);
+			if (!release_file.good()) {
+				release_file.close();
+				canister::log::error("parser", slug + " - release failed fs check");
+				ws->send("failed:parser_release:" + slug, uWS::TEXT);
 				failed++;
-				return;
-			} else if (release_value == "cnstr-cache-available") {
-				cached++;
-				return;
+				continue;
 			}
 
-			std::ifstream release_stream(release_value); // This represents the path on disk
-			std::ostringstream release;
-			release << release_stream.rdbuf();
-			canister::parser::parse_release(slug, release.str());
+			std::ostringstream release_stream;
+			release_stream << release_file.rdbuf();
+			std::string release_contents = release_stream.str();
+			release_file.close();
 
-			auto packages_task = canister::http::fetch_packages(slug, uri);
-			packages_task.wait();
-
-			auto packages_value = packages_task.get();
-			if (packages_value == "cnstr-not-available") {
-				ws->send("failed:" + slug, uWS::OpCode::TEXT);
+			if (release_contents.empty()) {
+				ws->send("failed:parser_release:" + slug, uWS::TEXT);
+				canister::log::error("parser", slug + " - empty release");
 				failed++;
-				return;
-			} else if (packages_value == "cnstr-cache-available") {
-				cached++;
-				return;
+				continue;
 			}
 
-			std::ifstream packages_stream(release_value); // This represents the path on disk
-			std::ostringstream packages;
-			packages << packages_stream.rdbuf();
-			canister::parser::parse_packages(slug, packages.str());
-			success++;
-		}));
-	}
+			canister::parser::parse_release(slug, release_contents);
+		}
 
-	for (auto &entry : tasks) {
-		entry.wait();
+		if (packages_path != "cnstr-cache-available") {
+			std::ifstream packages_file(packages_path);
+			if (!packages_file.good()) {
+				packages_file.close();
+				canister::log::error("parser", slug + " - packages failed fs check");
+				ws->send("failed:parser_packages:" + slug, uWS::TEXT);
+				failed++;
+				continue;
+			}
+
+			std::ostringstream packages_stream;
+			packages_stream << packages_file.rdbuf();
+			std::string packages_contents = packages_stream.str();
+			packages_file.close();
+
+			if (packages_contents.empty()) {
+				ws->send("failed:parser_packages:" + slug, uWS::TEXT);
+				canister::log::error("parser", slug + " - empty packages");
+				failed++;
+				continue;
+			}
+
+			canister::parser::parse_packages(slug, packages_contents);
+		}
+
+		success++;
 	}
 
 	ws->send("success:" + std::to_string(success), uWS::OpCode::TEXT);
@@ -83,10 +112,11 @@ void canister::parser::parse_packages(const std::string id, const std::string co
 		end = content.find("\n\n", start);
 
 		// We want to do each package on a separate thread (hopefully BigBoss plays nicely) // TODO: Prettify
-		package_threads.push_back(std::async(std::launch::async, canister::parser::parse_apt_kv, std::stringstream(content.substr(start, end - start))));
+		package_threads.push_back(std::async(std::launch::async, canister::parser::parse_apt_kv, std::stringstream(content.substr(start, end - start)), canister::util::packages_keys()));
 	}
 
 	for (auto &result : package_threads) {
+		result.wait();
 		packages.push_back(result.get());
 	}
 
@@ -95,11 +125,12 @@ void canister::parser::parse_packages(const std::string id, const std::string co
 }
 
 void canister::parser::parse_release(const std::string id, const std::string content) {
-	const auto release = parse_apt_kv(std::stringstream(content));
+	const auto release = parse_apt_kv(std::stringstream(content), canister::util::release_keys());
+	canister::log::info("parser", id + " - key length: " + std::to_string(release.size()));
 	// TODO: Write to Database
 }
 
-std::map<std::string, std::string> canister::parser::parse_apt_kv(std::stringstream stream) {
+std::map<std::string, std::string> canister::parser::parse_apt_kv(std::stringstream stream, std::vector<std::string> key_validator) {
 	std::map<std::string, std::string> kv_map;
 	std::string line, previous_key;
 
@@ -125,7 +156,11 @@ std::map<std::string, std::string> canister::parser::parse_apt_kv(std::stringstr
 			continue;
 		}
 
-		kv_map.insert(std::make_pair(matches[1], matches[2]));
+		// Validate our key before adding it to the map since Canister doesn't need all keys
+		if (std::find(key_validator.begin(), key_validator.end(), matches[1]) != key_validator.end()) {
+			kv_map.insert(std::make_pair(matches[1], matches[2]));
+		}
+
 		previous_key = matches[1];
 	}
 

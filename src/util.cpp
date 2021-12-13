@@ -9,6 +9,44 @@ std::string canister::util::cache_path() {
 	return std::filesystem::temp_directory_path().string() + "/canister/";
 }
 
+std::vector<std::string> canister::util::release_keys() {
+	return {
+		"Architecture",
+		"Codename",
+		"Components",
+		"Date",
+		"Description",
+		"Label",
+		"Origin",
+		"Suite",
+		"Version",
+		"Payment-Gateway"
+	};
+}
+
+std::vector<std::string> canister::util::packages_keys() {
+	return {
+		"Package",
+		"Architecture",
+		"Section",
+		"Maintainer",
+		"Author",
+		"Description",
+		"Name",
+		"Icon",
+		"Depiction",
+		"SileoDepiction",
+		"Native-Depiction",
+		"Header",
+		"Tag",
+		"Filename",
+		"SHA256",
+		"Installed-Size",
+		"Size",
+		"Version"
+	};
+}
+
 std::string canister::util::safe_fs_name(const std::string token) {
 	std::string value = token.substr(token.find("://") + 3);
 	std::transform(value.begin(), value.end(), value.begin(), [](char value) {

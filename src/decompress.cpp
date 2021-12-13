@@ -77,7 +77,6 @@ void canister::decompress::gz(const std::string id, const std::string archive, c
 	}
 
 	cache_file << output_data;
-	std::remove(archive.c_str()); // Remove the archive path when completed
 }
 
 void canister::decompress::xz(const std::string id, const std::string archive, const std::string cache) {
@@ -227,7 +226,6 @@ void canister::decompress::bz2(const std::string id, const std::string archive, 
 	// Converts our ifstream to a string using streambuf iterators
 	auto iterator = std::istreambuf_iterator<char>(cache_file);
 	std::string cache_data = std::string(iterator, std::istreambuf_iterator<char>());
-	std::remove(archive.c_str()); // Remove the archive path when completed
 }
 
 void canister::decompress::lzma(const std::string id, const std::string archive, const std::string cache) {
@@ -411,5 +409,4 @@ void canister::decompress::zstd(const std::string id, const std::string archive,
 	// Converts our ifstream to a string using streambuf iterators
 	auto iterator = std::istreambuf_iterator<char>(cache_file);
 	std::string cache_data = std::string(iterator, std::istreambuf_iterator<char>());
-	std::remove(archive.c_str()); // Remove the archive path when completed
 }

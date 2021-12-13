@@ -23,10 +23,10 @@
 #include <nlohmann/json.hpp>
 #include <picosha2.h>
 #include <sentry.h>
+#include <uv.h>
 #include <uws/App.h>
 #include <zlib.h>
 #include <zstd.h>
-#include <uv.h>
 
 namespace canister {
 	namespace decompress {
@@ -57,12 +57,14 @@ namespace canister {
 		void parse_manifest(const nlohmann::json data, uWS::WebSocket<false, true, std::string> *ws);
 		void parse_packages(const std::string id, const std::string content);
 		void parse_release(const std::string id, const std::string content);
-		std::map<std::string, std::string> parse_apt_kv(std::stringstream stream);
+		std::map<std::string, std::string> parse_apt_kv(std::stringstream stream, std::vector<std::string> key_validator);
 	}
 
 	namespace util {
 		std::string timestamp();
 		std::string cache_path();
+		std::vector<std::string> release_keys();
+		std::vector<std::string> packages_keys();
 		std::string safe_fs_name(const std::string token);
 		bool matched_hash(const std::string left, const std::string right);
 	}
