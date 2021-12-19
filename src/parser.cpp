@@ -166,6 +166,8 @@ std::map<std::string, std::string> canister::parser::parse_apt_kv(std::stringstr
 
 			if (!line.ends_with(":")) {
 				kv_map[previous_key].append("\n" + line);
+			} else {
+				previous_key = matches[1];
 			}
 		}
 
