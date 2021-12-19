@@ -31,7 +31,24 @@
 
 namespace canister {
 	namespace db {
+		struct release {
+			std::string slug;
+			std::vector<std::string> aliases;
+			std::int8_t ranking;
+
+			std::string uri;
+			std::string dist;
+			std::string suite;
+
+			std::string name;
+			std::string version;
+			std::string description;
+			std::string date;
+			std::string gateway;
+		};
+
 		void bootstrap();
+		void write_release(canister::db::release data);
 	}
 
 	namespace decompress {
@@ -60,8 +77,8 @@ namespace canister {
 
 	namespace parser {
 		void parse_manifest(const nlohmann::json data, uWS::WebSocket<false, true, std::string> *ws);
-		void parse_packages(const std::string id, const std::string content);
-		void parse_release(const std::string id, const std::string content);
+		std::map<std::string, std::string> parse_release(const std::string id, const std::string content);
+		std::vector<std::map<std::string, std::string>> parse_packages(const std::string id, const std::string content);
 		std::map<std::string, std::string> parse_apt_kv(std::stringstream stream, std::vector<std::string> key_validator);
 	}
 

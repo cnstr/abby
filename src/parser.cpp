@@ -11,6 +11,11 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 		auto slug = object["slug"].get<std::string>();
 		auto ranking = object["ranking"].get<std::int8_t>();
 		auto uri = object["uri"].get<std::string>();
+		std::vector<std::string> aliases;
+
+		if (object.contains("aliases")) {
+			aliases = object["aliases"].get<std::vector<std::string>>();
+		}
 
 		// The URI needs to not have a trailing slash
 		if (uri.ends_with("/")) {
@@ -67,7 +72,20 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 				continue;
 			}
 
-			canister::parser::parse_release(slug, release_contents);
+			auto release = canister::parser::parse_release(slug, release_contents);
+
+			// Ths dist and suite are blank strings because NULL is unacceptable
+			canister::db::write_release({ .slug = slug,
+				.aliases = aliases,
+				.ranking = ranking,
+				.uri = uri,
+				.dist = "",
+				.suite = "",
+				.name = release["Name"],
+				.version = release["Version"],
+				.description = release["Description"],
+				.date = release["Date"],
+				.gateway = release["Payment-Gateway"] });
 		}
 
 		if (packages_path != "cnstr-cache-available") {
@@ -103,7 +121,7 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 	ws->send("cached:" + std::to_string(cached), uWS::OpCode::TEXT);
 }
 
-void canister::parser::parse_packages(const std::string id, const std::string content) {
+std::vector<std::map<std::string, std::string>> canister::parser::parse_packages(const std::string id, const std::string content) {
 	size_t start, end = 0;
 	std::vector<std::map<std::string, std::string>> packages;
 	std::vector<std::future<std::map<std::string, std::string>>> package_threads;
@@ -121,13 +139,13 @@ void canister::parser::parse_packages(const std::string id, const std::string co
 	}
 
 	canister::log::info("parser", id + " - packages count: " + std::to_string(packages.size()));
-	// TODO: Write to Database
+	return packages;
 }
 
-void canister::parser::parse_release(const std::string id, const std::string content) {
+std::map<std::string, std::string> canister::parser::parse_release(const std::string id, const std::string content) {
 	const auto release = parse_apt_kv(std::stringstream(content), canister::util::release_keys());
 	canister::log::info("parser", id + " - key length: " + std::to_string(release.size()));
-	// TODO: Write to Database
+	return release;
 }
 
 std::map<std::string, std::string> canister::parser::parse_apt_kv(std::stringstream stream, std::vector<std::string> key_validator) {
