@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  database:
+    image: postgres
+    container_name: canister-db
+    volumes:
+      - canister-db:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: core
+      POSTGRES_USER: core
+      POSTGRES_DB: core
+    logging:
+      driver: none
+volumes:
+  canister-db:

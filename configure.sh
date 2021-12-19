@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
-if [[ -d "lib" ]]; then
+
+if [[ ! -f "$MESON_BUILD_ROOT/bootstrap.sql" ]]; then
+	command cp "$MESON_SOURCE_ROOT/bootstrap.sql" "$MESON_BUILD_ROOT/bootstrap.sql"
+fi
+
+if [[ ! $(cmp -s "$MESON_SOURCE_ROOT/bootstrap.sql" "$MESON_BUILD_ROOT/bootstrap.sql") ]]; then
+	command rm "$MESON_BUILD_ROOT/bootstrap.sql"
+	command cp "$MESON_SOURCE_ROOT/bootstrap.sql" "$MESON_BUILD_ROOT/bootstrap.sql"
+fi
+
+if [[ -d "$MESON_SOURCE_ROOT/lib" ]]; then
 	exit 0
 fi
 
@@ -26,8 +36,11 @@ command make -j8 -C lib/curl
 command cp lib/curl/libcurlpp.a lib/curlpp.a
 command rm -rf lib/curl
 
-# Pending: https://github.com/getsentry/sentry-native/issues/501
-command cd vendor/sentry/external/breakpad && git checkout handler && cd -
+if [[ ! -v CONTAINER ]]; then
+	# Pending: https://github.com/getsentry/sentry-native/issues/501
+	command cd vendor/sentry/external/breakpad && git checkout handler && cd -
+fi
+
 command cmake -Blib/sentry -Svendor/sentry -DCMAKE_BUILD_TYPE=RelWithDebInfo
 command make -j8 -C lib/sentry
 

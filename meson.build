@@ -12,6 +12,7 @@ compiler = meson.get_compiler('cpp')
 lib_dir = meson.current_source_dir() + '/lib'
 sources = [
 	'src/canister.cpp',
+	'src/db.cpp',
 	'src/decompress.cpp',
 	'src/http.cpp',
 	'src/log.cpp',
@@ -25,7 +26,8 @@ message('Built vendor dependencies')
 executable('core', sources,
 	install : true,
 	include_directories: [
-		include_directories('include')
+		include_directories('include'),
+		include_directories('/usr/include/postgresql')
 	],
 	dependencies: [
 		compiler.find_library('uws', dirs: lib_dir, required: true),
@@ -37,6 +39,7 @@ executable('core', sources,
 		compiler.find_library('bz2', required: true),
 		compiler.find_library('libz', required: true),
 		compiler.find_library('lzma', required: true),
-		compiler.find_library('curl', required: true)
+		compiler.find_library('curl', required: true),
+		compiler.find_library('pq', required: true)
 	]
 )
