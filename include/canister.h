@@ -23,12 +23,17 @@
 #include <nlohmann/json.hpp>
 #include <picosha2.h>
 #include <sentry.h>
+#include <tao/pq.hpp>
 #include <uv.h>
 #include <uws/App.h>
 #include <zlib.h>
 #include <zstd.h>
 
 namespace canister {
+	namespace db {
+		void bootstrap();
+	}
+
 	namespace decompress {
 		void gz(const std::string id, const std::string archive, const std::string cache);
 		void xz(const std::string id, const std::string archive, const std::string cache);
