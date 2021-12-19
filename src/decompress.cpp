@@ -84,12 +84,10 @@ void canister::decompress::xz(const std::string id, const std::string archive, c
 	FILE *const file_out = fopen(cache.c_str(), "wb+");
 
 	if (!file_in) {
-		fclose(file_out);
 		throw std::runtime_error(id + " - xz: failed to open archive at " + archive);
 	}
 
 	if (!file_out) {
-		fclose(file_in);
 		throw std::runtime_error(id + " - xz: failed to make extract handle at " + cache);
 	}
 
@@ -180,12 +178,10 @@ void canister::decompress::bz2(const std::string id, const std::string archive, 
 	FILE *const file_out = fopen(cache.c_str(), "wb+");
 
 	if (!file_in) {
-		fclose(file_out);
 		throw std::runtime_error(id + " - bz2: failed to open archive at " + archive);
 	}
 
 	if (!file_out) {
-		fclose(file_in);
 		throw std::runtime_error(id + " - bz2: failed to make extract handle at " + cache);
 	}
 
@@ -233,12 +229,10 @@ void canister::decompress::lzma(const std::string id, const std::string archive,
 	FILE *const file_out = fopen(cache.c_str(), "wb+");
 
 	if (!file_in) {
-		fclose(file_out);
 		throw std::runtime_error(id + " - lzma: failed to open archive at " + archive);
 	}
 
 	if (!file_out) {
-		fclose(file_in);
 		throw std::runtime_error(id + " - lzma: failed to make extract handle at " + cache);
 	}
 
@@ -324,12 +318,10 @@ void canister::decompress::zstd(const std::string id, const std::string archive,
 	FILE *const file_out = fopen(cache.c_str(), "wb+");
 
 	if (!file_in) {
-		fclose(file_out);
 		throw std::runtime_error(id + " - zstd: failed to open archive at " + archive);
 	}
 
 	if (!file_out) {
-		fclose(file_in);
 		throw std::runtime_error(id + " - zstd: failed to make extract handle at " + cache);
 	}
 
