@@ -14,6 +14,7 @@
 #include <thread>
 
 #include <bzlib.h>
+#include <ctype.h>
 #include <curlpp/Easy.hpp>
 #include <curlpp/Infos.hpp>
 #include <curlpp/Multi.hpp>
@@ -57,6 +58,18 @@ namespace canister {
 		void bz2(const std::string id, const std::string archive, const std::string cache);
 		void lzma(const std::string id, const std::string archive, const std::string cache);
 		void zstd(const std::string id, const std::string archive, const std::string cache);
+	}
+
+	namespace dpkg {
+		struct version {
+			std::int8_t epoch;
+			std::string version;
+			std::string revision;
+		};
+
+		int compare(const std::string &left, const std::string &right);
+		static int order(int c);
+		static int verrevcmp(const char *a, const char *b);
 	}
 
 	namespace http {

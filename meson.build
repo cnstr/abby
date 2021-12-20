@@ -14,6 +14,7 @@ sources = [
 	'src/canister.cpp',
 	'src/db.cpp',
 	'src/decompress.cpp',
+	'src/dpkg.cpp',
 	'src/http.cpp',
 	'src/log.cpp',
 	'src/parser.cpp',
