@@ -165,6 +165,30 @@ std::optional<std::ostringstream> canister::http::fetch(const std::string url) {
 	}
 }
 
+std::optional<std::ostringstream> canister::http::sileo_endpoint(const std::string uri) {
+	try {
+		curlpp::Easy request;
+		std::ostringstream response_stream;
+
+		request.setOpt(new curlpp::options::Timeout(10));
+		request.setOpt(new curlpp::options::LowSpeedLimit(0));
+		request.setOpt(new curlpp::options::Url(uri + "/payment_endpoint"));
+		request.setOpt(new curlpp::options::HttpHeader(canister::http::headers()));
+		request.setOpt(new curlpp::options::WriteStream(&response_stream));
+
+		request.perform();
+
+		auto http_code = curlpp::infos::ResponseCode::get(request);
+		if (http_code != 200) {
+			throw new std::runtime_error("invalid status code: " + http_code);
+		}
+
+		return response_stream;
+	} catch (...) {
+		return std::nullopt;
+	}
+}
+
 std::string canister::http::fetch_release(const std::string slug, const std::string uri) {
 	try {
 		auto response_stream = canister::http::fetch(uri + "/Release");

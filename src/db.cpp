@@ -26,13 +26,13 @@ void canister::db::bootstrap() {
 void canister::db::write_release(canister::db::release data) {
 	auto transaction = connection->transaction();
 	auto statement = R""""(
-		INSERT INTO "Repositories" (slug, aliases, ranking, uri, dist, suite, name, version, description, date, gateway)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT (slug) DO UPDATE
-		SET aliases=$2, ranking=$3, uri=$4, dist=$5, suite=$6, name=$7, version=$8, description=$9, date=$10, gateway=$11
+		INSERT INTO "Repositories" (slug, aliases, ranking, uri, dist, suite, name, version, description, date, payment_gateway, sileo_endpoint)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) ON CONFLICT (slug) DO UPDATE
+		SET aliases=$2, ranking=$3, uri=$4, dist=$5, suite=$6, name=$7, version=$8, description=$9, date=$10, payment_gateway=$11, sileo_endpoint=$12
 	)"""";
 
 	try {
-		transaction->execute(statement, data.slug, data.aliases, data.ranking, data.uri, data.dist, data.suite, data.name, data.version, data.description, data.date, data.gateway);
+		transaction->execute(statement, data.slug, data.aliases, data.ranking, data.uri, data.dist, data.suite, data.name, data.version, data.description, data.date, data.payment_gateway, data.sileo_endpoint);
 		transaction->commit();
 	} catch (std::exception &exc) {
 		std::cout << exc.what() << std::endl;

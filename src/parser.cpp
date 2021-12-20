@@ -6,6 +6,7 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 	int success = 0, failed = 0, cached = 0;
 
 	for (const auto &repository : data.items()) {
+		std::cout << std::endl;
 		auto object = repository.value();
 
 		auto slug = object["slug"].get<std::string>();
@@ -74,8 +75,12 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 
 			auto release = canister::parser::parse_release(slug, release_contents);
 
+			auto request = canister::http::sileo_endpoint(uri);
+			auto endpoint = request.has_value() ? request.value().str() : "";
+
 			// Ths dist and suite are blank strings because NULL is unacceptable
-			canister::db::write_release({ .slug = slug,
+			canister::db::write_release({
+				.slug = slug,
 				.aliases = aliases,
 				.ranking = ranking,
 				.uri = uri,
@@ -85,7 +90,9 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 				.version = release["Version"],
 				.description = release["Description"],
 				.date = release["Date"],
-				.gateway = release["Payment-Gateway"] });
+				.payment_gateway = release["Payment-Gateway"],
+				.sileo_endpoint = endpoint,
+			});
 		}
 
 		if (packages_path != "cnstr-cache-available") {

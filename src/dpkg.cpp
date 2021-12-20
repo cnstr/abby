@@ -41,7 +41,6 @@ int canister::dpkg::compare(const std::string &left_raw, const std::string &righ
 	}
 
 	// Compare everything
-	int return_code;
 	if (left.epoch > right.epoch) {
 		return 1;
 	}
@@ -59,7 +58,7 @@ int canister::dpkg::compare(const std::string &left_raw, const std::string &righ
 
 // These are taken from dpkg with minor modifications to build with C++20 and Canister
 // https://git.dpkg.org/cgit/dpkg/dpkg.git/tree/lib/dpkg/version.c
-static int canister::dpkg::order(int c) {
+int canister::dpkg::order(int c) {
 	if (isdigit(c))
 		return 0;
 	else if (isalpha(c))
@@ -72,7 +71,7 @@ static int canister::dpkg::order(int c) {
 		return 0;
 }
 
-static int canister::dpkg::verrevcmp(const char *a, const char *b) {
+int canister::dpkg::verrevcmp(const char *a, const char *b) {
 	if (a == NULL)
 		a = "";
 	if (b == NULL)

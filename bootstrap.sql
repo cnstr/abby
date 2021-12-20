@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS "Repositories" (
 	"version" TEXT,
 	"description" TEXT,
 	"date" TEXT,
-	"gateway" TEXT
+	"payment_gateway" TEXT,
+	"sileo_endpoint" TEXT
 );
 ---
 CREATE TABLE IF NOT EXISTS "Packages" (

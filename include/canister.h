@@ -45,7 +45,8 @@ namespace canister {
 			std::string version;
 			std::string description;
 			std::string date;
-			std::string gateway;
+			std::string payment_gateway;
+			std::string sileo_endpoint;
 		};
 
 		void bootstrap();
@@ -68,8 +69,8 @@ namespace canister {
 		};
 
 		int compare(const std::string &left, const std::string &right);
-		static int order(int c);
-		static int verrevcmp(const char *a, const char *b);
+		int order(int c);
+		int verrevcmp(const char *a, const char *b);
 	}
 
 	namespace http {
@@ -77,6 +78,7 @@ namespace canister {
 		std::list<std::string> headers();
 		std::optional<nlohmann::json> manifest();
 		std::optional<std::ostringstream> fetch(const std::string url);
+		std::optional<std::ostringstream> sileo_endpoint(const std::string uri);
 		std::string fetch_release(const std::string slug, const std::string uri);
 		std::string fetch_packages(const std::string slug, const std::string uri);
 		std::string fetch_dist_release(const std::string repo_url, const std::string dist_name);
