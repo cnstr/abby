@@ -200,6 +200,7 @@ std::string canister::http::fetch_release(const std::string slug, const std::str
 			return std::string("cnstr-not-available");
 		}
 
+		canister::log::info("http", slug + " - hit: " + uri + "/Release");
 		std::string response = response_stream.value().str();
 		std::ifstream file(file_path);
 
@@ -255,6 +256,7 @@ std::string canister::http::fetch_packages(const std::string slug, const std::st
 				continue;
 			}
 
+			canister::log::info("http", slug + " - hit: " + uri + "/" + repo_file);
 			std::string response = response_stream.value().str();
 			std::ifstream file(file_path);
 
@@ -317,4 +319,14 @@ std::string canister::http::fetch_packages(const std::string slug, const std::st
 	}
 
 	return std::string("cnstr-not-available");
+}
+
+std::string canister::http::fetch_dist_release(const std::string slug, const std::string uri, const std::string dist) {
+	auto url = uri + "/dists/" + dist;
+	return canister::http::fetch_release(slug, url);
+}
+
+std::string canister::http::fetch_dist_packages(const std::string slug, const std::string uri, const std::string dist, const std::string suite) {
+	auto url = uri + "/dists/" + dist + "/" + suite + "/binary-iphoneos-arm";
+	return canister::http::fetch_packages(slug, url);
 }

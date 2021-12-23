@@ -23,29 +23,38 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 			uri.pop_back();
 		}
 
+		std::string release_path, packages_path;
+		std::map<std::string, std::string> release;
+		std::vector<std::map<std::string, std::string>> packages;
+
 		// Distribution repository
 		if (object.contains("dist") && object.contains("suite")) {
 			auto dist = object["dist"].get<std::string>();
 			auto suite = object["suite"].get<std::string>();
 
-			continue;
+			release_path = canister::http::fetch_dist_release(slug, uri, dist);
+			packages_path = canister::http::fetch_dist_packages(slug, uri, dist, suite);
+		} else {
+			release_path = canister::http::fetch_release(slug, uri);
+			packages_path = canister::http::fetch_packages(slug, uri);
 		}
 
-		std::string release_path = canister::http::fetch_release(slug, uri);
 		if (release_path == "cnstr-not-available") {
 			ws->send("failed:download_release:" + slug, uWS::TEXT);
+			canister::log::error("http", slug + " - failed to download release");
 			failed++;
 			continue;
 		}
 
-		std::string packages_path = canister::http::fetch_packages(slug, uri);
 		if (packages_path == "cnstr-not-available") {
 			ws->send("failed:download_packages:" + slug, uWS::TEXT);
+			canister::log::error("http", slug + " - failed to download packages");
 			failed++;
 			continue;
 		}
 
 		if (release_path == "cnstr-cache-available" && packages_path == "cnstr-cache-available") {
+			canister::log::info("parser", slug + " - skipping due to cache");
 			cached++;
 			continue;
 		}
@@ -73,26 +82,7 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 				continue;
 			}
 
-			auto release = canister::parser::parse_release(slug, release_contents);
-
-			auto request = canister::http::sileo_endpoint(uri);
-			auto endpoint = request.has_value() ? request.value().str() : "";
-
-			// Ths dist and suite are blank strings because NULL is unacceptable
-			canister::db::write_release({
-				.slug = slug,
-				.aliases = aliases,
-				.ranking = ranking,
-				.uri = uri,
-				.dist = "",
-				.suite = "",
-				.name = release["Name"],
-				.version = release["Version"],
-				.description = release["Description"],
-				.date = release["Date"],
-				.payment_gateway = release["Payment-Gateway"],
-				.sileo_endpoint = endpoint,
-			});
+			release = canister::parser::parse_release(slug, release_contents);
 		}
 
 		if (packages_path != "cnstr-cache-available") {
@@ -117,8 +107,27 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 				continue;
 			}
 
-			canister::parser::parse_packages(slug, packages_contents);
+			packages = canister::parser::parse_packages(slug, packages_contents);
 		}
+
+		auto request = canister::http::sileo_endpoint(uri);
+		auto endpoint = request.has_value() ? request.value().str() : "";
+
+		// Ths dist and suite are blank strings because NULL is unacceptable
+		canister::db::write_release({
+			.slug = slug,
+			.aliases = aliases,
+			.ranking = ranking,
+			.uri = uri,
+			.dist = "",
+			.suite = "",
+			.name = release["Name"],
+			.version = release["Version"],
+			.description = release["Description"],
+			.date = release["Date"],
+			.payment_gateway = release["Payment-Gateway"],
+			.sileo_endpoint = endpoint,
+		});
 
 		success++;
 	}

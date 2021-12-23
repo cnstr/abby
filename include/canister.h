@@ -81,8 +81,8 @@ namespace canister {
 		std::optional<std::ostringstream> sileo_endpoint(const std::string uri);
 		std::string fetch_release(const std::string slug, const std::string uri);
 		std::string fetch_packages(const std::string slug, const std::string uri);
-		std::string fetch_dist_release(const std::string repo_url, const std::string dist_name);
-		std::string fetch_dist_packages(const std::string repo_url, const std::string dist_name, const std::string suite_name);
+		std::string fetch_dist_release(const std::string slug, const std::string uri, const std::string dist);
+		std::string fetch_dist_packages(const std::string slug, const std::string uri, const std::string dist, const std::string suite);
 	}
 
 	namespace log {
