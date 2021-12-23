@@ -6,6 +6,8 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 	int success = 0, failed = 0, cached = 0;
 
 	for (const auto &repository : data.items()) {
+		// TODO: Check if slugs not in the index list exist and delete them
+		// This may happen if we change a slug on the manifests
 		std::cout << std::endl;
 		auto object = repository.value();
 
@@ -25,7 +27,7 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 
 		std::string release_path, packages_path;
 		std::map<std::string, std::string> release;
-		std::vector<std::map<std::string, std::string>> packages;
+		canister::parser::packages_info packages_info;
 
 		// Distribution repository
 		if (object.contains("dist") && object.contains("suite")) {
@@ -107,7 +109,7 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 				continue;
 			}
 
-			packages = canister::parser::parse_packages(slug, packages_contents);
+			packages_info = canister::parser::parse_packages(slug, packages_contents);
 		}
 
 		auto request = canister::http::sileo_endpoint(uri);
@@ -118,6 +120,8 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 			.slug = slug,
 			.aliases = aliases,
 			.ranking = ranking,
+			.package_count = packages_info.count,
+			.sections = packages_info.sections,
 			.uri = uri,
 			.dist = "",
 			.suite = "",
@@ -137,9 +141,9 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 	ws->send("cached:" + std::to_string(cached), uWS::OpCode::TEXT);
 }
 
-std::vector<std::map<std::string, std::string>> canister::parser::parse_packages(const std::string id, const std::string content) {
+canister::parser::packages_info canister::parser::parse_packages(const std::string id, const std::string content) {
 	size_t start, end = 0;
-	std::vector<std::map<std::string, std::string>> packages;
+	canister::parser::packages_info info{};
 	std::vector<std::future<std::map<std::string, std::string>>> package_threads;
 
 	while ((start = content.find_first_not_of("\n\n", end)) != std::string::npos) {
@@ -151,11 +155,23 @@ std::vector<std::map<std::string, std::string>> canister::parser::parse_packages
 
 	for (auto &result : package_threads) {
 		result.wait();
-		packages.push_back(result.get());
+		auto package = result.get();
+		info.data.push_back(package);
+
+		// Check if the section isn't already in the array then adds it
+		if (!package.contains("Section")) {
+			continue;
+		}
+
+		auto search_result = std::find(info.sections.begin(), info.sections.end(), package["Section"]);
+		if (search_result == info.sections.end()) {
+			info.sections.push_back(package["Section"]);
+		}
 	}
 
-	canister::log::info("parser", id + " - packages count: " + std::to_string(packages.size()));
-	return packages;
+	info.count = info.data.size();
+	canister::log::info("parser", id + " - packages count: " + std::to_string(info.count));
+	return info;
 }
 
 std::map<std::string, std::string> canister::parser::parse_release(const std::string id, const std::string content) {

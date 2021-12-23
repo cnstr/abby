@@ -26,16 +26,43 @@ void canister::db::bootstrap() {
 void canister::db::write_release(canister::db::release data) {
 	auto transaction = connection->transaction();
 	auto statement = R""""(
-		INSERT INTO "Repositories" (slug, aliases, ranking, uri, dist, suite, name, version, description, date, payment_gateway, sileo_endpoint)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) ON CONFLICT (slug) DO UPDATE
-		SET aliases=$2, ranking=$3, uri=$4, dist=$5, suite=$6, name=$7, version=$8, description=$9, date=$10, payment_gateway=$11, sileo_endpoint=$12
-	)"""";
+		INSERT INTO "Repositories" (
+			slug,
+			aliases,
+			ranking,
+			package_count,
+			sections,
+			uri,
+			dist,
+			suite,
+			name,
+			version,
+			description,
+			date,
+			payment_gateway,
+			sileo_endpoint
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) ON CONFLICT (slug)
+		DO UPDATE SET
+			aliases=$2,
+			ranking=$3,
+			package_count=$4,
+			sections=$5,
+			uri=$6,
+			dist=$7,
+			suite=$8,
+			name=$9,
+			version=$10,
+			description=$11,
+			date=$12,
+			payment_gateway=$13,
+			sileo_endpoint=$14
+		)"""";
 
 	try {
-		transaction->execute(statement, data.slug, data.aliases, data.ranking, data.uri, data.dist, data.suite, data.name, data.version, data.description, data.date, data.payment_gateway, data.sileo_endpoint);
+		transaction->execute(statement, data.slug, data.aliases, data.ranking, data.package_count, data.sections, data.uri, data.dist, data.suite, data.name, data.version, data.description, data.date, data.payment_gateway, data.sileo_endpoint);
 		transaction->commit();
 	} catch (std::exception &exc) {
-		std::cout << exc.what() << std::endl;
+		canister::log::error("db", exc.what());
 		transaction->rollback();
 	}
 	canister::log::info("db", "inserted_release: " + data.slug);

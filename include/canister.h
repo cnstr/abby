@@ -36,6 +36,8 @@ namespace canister {
 			std::string slug;
 			std::vector<std::string> aliases;
 			std::int8_t ranking;
+			std::uint32_t package_count;
+			std::vector<std::string> sections;
 
 			std::string uri;
 			std::string dist;
@@ -91,9 +93,15 @@ namespace canister {
 	}
 
 	namespace parser {
+		struct packages_info {
+			std::uint32_t count;
+			std::vector<std::string> sections;
+			std::vector<std::map<std::string, std::string>> data;
+		};
+
 		void parse_manifest(const nlohmann::json data, uWS::WebSocket<false, true, std::string> *ws);
 		std::map<std::string, std::string> parse_release(const std::string id, const std::string content);
-		std::vector<std::map<std::string, std::string>> parse_packages(const std::string id, const std::string content);
+		canister::parser::packages_info parse_packages(const std::string id, const std::string content);
 		std::map<std::string, std::string> parse_apt_kv(std::stringstream stream, std::vector<std::string> key_validator);
 	}
 

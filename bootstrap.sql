@@ -1,7 +1,9 @@
 CREATE TABLE IF NOT EXISTS "Repositories" (
 	"slug" VARCHAR(255) NOT NULL PRIMARY KEY,
-	"aliases" VARCHAR(255) NOT NULL,
+	"aliases" VARCHAR(255)[] NOT NULL,
 	"ranking" SMALLINT NOT NULL,
+	"package_count" INT NOT NULL,
+	"sections" VARCHAR(255)[] NOT NULL,
 
 	"uri" TEXT NOT NULL,
 	"dist" VARCHAR(255),
