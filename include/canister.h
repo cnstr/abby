@@ -32,7 +32,7 @@
 
 namespace canister {
 	namespace db {
-		struct release {
+		struct repository {
 			std::string slug;
 			std::vector<std::string> aliases;
 			std::int8_t ranking;
@@ -51,8 +51,46 @@ namespace canister {
 			std::string sileo_endpoint;
 		};
 
+		struct package {
+			std::string id;
+			std::string repo;
+			std::float_t price;
+		};
+
+		struct vpackage {
+			std::string uuid;
+			std::string package;
+			bool current_version;
+
+			std::string version;
+			std::string architecture;
+			std::string filename;
+
+			std::string sha_256;
+			std::string name;
+			std::string description;
+			std::string author;
+			std::string maintainer;
+			std::string depiction;
+			std::string native_depiction;
+			std::string header;
+			std::string tint_color;
+			std::string icon;
+			std::string section;
+			std::string tag;
+			std::string installed_size;
+			std::string size;
+		};
+
 		void bootstrap();
-		void write_release(canister::db::release data);
+		std::optional<std::string> package_exists(std::string id);
+		std::optional<std::string> current_vpackage_version(std::string package);
+		std::int8_t repository_ranking(std::string slug);
+
+		void write_repository(canister::db::repository data);
+		void write_package(canister::db::package data);
+		void write_vpackage(canister::db::vpackage data);
+		void set_current_vpackage(std::string uuid, std::string package);
 	}
 
 	namespace decompress {

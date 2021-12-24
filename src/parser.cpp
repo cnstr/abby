@@ -116,7 +116,7 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 		auto endpoint = request.has_value() ? request.value().str() : "";
 
 		// Ths dist and suite are blank strings because NULL is unacceptable
-		canister::db::write_release({
+		canister::db::write_repository({
 			.slug = slug,
 			.aliases = aliases,
 			.ranking = ranking,
@@ -132,6 +132,98 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 			.payment_gateway = release["Payment-Gateway"],
 			.sileo_endpoint = endpoint,
 		});
+
+		// TODO: Support Payment-Gateway specification for price calculation
+		for (auto &package_map : packages_info.data) {
+			// This means a package with the ID does not exist
+			auto exists = canister::db::package_exists(package_map["Package"]);
+			if (!exists.has_value()) {
+				canister::db::write_package({
+					.id = package_map["Package"],
+					.repo = slug,
+					.price = 0.00, // TODO: Price
+				});
+
+				auto header = package_map["Header"].length() > 0 ? package_map["Header"] : "";
+				auto tint_color = "";
+				auto udid = package_map["Package"] + "$$" + package_map["Version"] + "$$" + slug;
+
+				// TODO: Support the new DepictionKit specification
+				canister::db::write_vpackage({
+					.uuid = udid,
+					.package = package_map["Package"],
+					.current_version = true,
+					.version = package_map["Version"],
+					.architecture = package_map["Architecture"],
+					.filename = package_map["Filename"],
+					.sha_256 = package_map["SHA256"],
+					.name = package_map["Name"],
+					.description = package_map["Description"],
+					.author = package_map["Author"],
+					.maintainer = package_map["Maintainer"],
+					.depiction = package_map["Depiction"],
+					.native_depiction = package_map["SileoDepiction"],
+					.header = header,
+					.tint_color = tint_color,
+					.icon = package_map["Icon"],
+					.section = package_map["Section"],
+					.tag = package_map["Tag"],
+					.installed_size = package_map["Installed-Size"],
+					.size = package_map["Size"],
+				});
+			} else {
+				// Update the package's repository if the newer slug has a higher ranking
+				auto db_slug = exists.value();
+				auto db_ranking = canister::db::repository_ranking(db_slug);
+
+				// Lower ranking is better
+				if (ranking < db_ranking) {
+					canister::db::write_package({
+						.id = package_map["Package"],
+						.repo = slug,
+						.price = 0.00, // TODO: Price
+					});
+				}
+
+				// Insert this subpackage as a VPackage and set current_version using version comparison.
+				auto vpackage_query = canister::db::current_vpackage_version(package_map["Package"]);
+				if (!vpackage_query.has_value()) {
+					continue;
+				}
+
+				auto header = package_map["Header"].length() > 0 ? package_map["Header"] : "";
+				auto tint_color = "";
+				auto udid = package_map["Package"] + "$$" + package_map["Version"] + "$$" + slug;
+
+				canister::db::write_vpackage({
+					.uuid = udid,
+					.package = package_map["Package"],
+					.current_version = false,
+					.version = package_map["Version"],
+					.architecture = package_map["Architecture"],
+					.filename = package_map["Filename"],
+					.sha_256 = package_map["SHA256"],
+					.name = package_map["Name"],
+					.description = package_map["Description"],
+					.author = package_map["Author"],
+					.maintainer = package_map["Maintainer"],
+					.depiction = package_map["Depiction"],
+					.native_depiction = package_map["SileoDepiction"],
+					.header = header,
+					.tint_color = tint_color,
+					.icon = package_map["Icon"],
+					.section = package_map["Section"],
+					.tag = package_map["Tag"],
+					.installed_size = package_map["Installed-Size"],
+					.size = package_map["Size"],
+				});
+
+				// When it's equal to a value of one that means the first argument is a greater version
+				if (canister::dpkg::compare(package_map["Version"], vpackage_query.value()) == 1) {
+					canister::db::set_current_vpackage(udid, package_map["Package"]);
+				}
+			}
+		}
 
 		success++;
 	}
