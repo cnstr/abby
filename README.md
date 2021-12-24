@@ -1,5 +1,5 @@
 # Canister Core
-This is the core service of Canister (version 1).<br>
+This is the core service of Canister (version 2).<br>
 It is responsible for handling the following tasks:
 * Indexing repositories
 * Caching package files
