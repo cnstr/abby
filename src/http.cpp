@@ -112,7 +112,7 @@ std::list<std::string> canister::http::headers() {
 	headers.push_back("X-Firmware: 2.0");
 	headers.push_back("X-Machine: iPhone13,1");
 	headers.push_back("Cache-Control: no-cache");
-	headers.push_back("User-Agent: Canister/2.0; +https://tale.me/ua/canister");
+	headers.push_back("User-Agent: Canister/2.0; (+https://canister.me/go/ua)");
 	headers.push_back("X-Unique-ID: canister-v2-unique-device-identifier");
 	return headers;
 }
