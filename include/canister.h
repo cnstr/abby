@@ -54,7 +54,7 @@ namespace canister {
 		struct package {
 			std::string id;
 			std::string repo;
-			std::float_t price;
+			std::string price;
 		};
 
 		struct vpackage {
@@ -119,6 +119,7 @@ namespace canister {
 		std::optional<nlohmann::json> manifest();
 		std::optional<std::ostringstream> fetch(const std::string url);
 		std::optional<std::ostringstream> sileo_endpoint(const std::string uri);
+		std::optional<std::string> sileo_endpoint_price(const std::string package, std::string uri);
 		std::string fetch_release(const std::string slug, const std::string uri);
 		std::string fetch_packages(const std::string slug, const std::string uri);
 		std::string fetch_dist_release(const std::string slug, const std::string uri, const std::string dist);
@@ -131,6 +132,15 @@ namespace canister {
 	}
 
 	namespace parser {
+		struct repo_manifest {
+			std::string slug;
+			std::int8_t ranking;
+			std::vector<std::string> aliases;
+			std::string uri;
+			std::string dist;
+			std::string suite;
+		};
+
 		struct packages_info {
 			std::uint32_t count;
 			std::vector<std::string> sections;

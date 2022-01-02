@@ -2,61 +2,83 @@
 
 void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<false, true, std::string> *ws) {
 	canister::log::info("parser", "processing repository manifest");
-	std::vector<std::future<void>> tasks;
-	int success = 0, failed = 0, cached = 0;
 
-	for (const auto &repository : data.items()) {
-		// TODO: Check if slugs not in the index list exist and delete them
-		// This may happen if we change a slug on the manifests
-		std::cout << std::endl;
-		auto object = repository.value();
+	int successful = 0;
+	int failed = 0;
+	int cached = 0;
 
-		auto slug = object["slug"].get<std::string>();
-		auto ranking = object["ranking"].get<std::int8_t>();
-		auto uri = object["uri"].get<std::string>();
-		std::vector<std::string> aliases;
+	std::vector<canister::parser::repo_manifest> manifests;
 
-		if (object.contains("aliases")) {
-			aliases = object["aliases"].get<std::vector<std::string>>();
+	for (auto &[iter, value] : data.items()) {
+		if (!value.contains("slug") || !value.contains("ranking") || !value.contains("uri")) {
+			auto json = nlohmann::json({
+				{ "repo", "unknown" },
+				{ "type", "failure" },
+				{ "message", "missing slug, ranking, or uri" },
+				{ "timestamp", canister::util::timestamp() },
+			});
+
+			ws->send(json.dump(), uWS::TEXT);
 		}
 
-		// The URI needs to not have a trailing slash
-		if (uri.ends_with("/")) {
-			uri.pop_back();
+		// Get all of our necessary props from the manifest
+		auto manifest = canister::parser::repo_manifest();
+		manifest.slug = value["slug"].get<std::string>();
+		manifest.ranking = value["ranking"].get<std::int8_t>();
+		manifest.uri = value["uri"].get<std::string>();
+
+		// The URI must not have a trailing slash
+		if (manifest.uri.ends_with("/")) {
+			manifest.uri.pop_back();
 		}
 
+		if (value.contains("aliases")) {
+			manifest.aliases = value["aliases"].get<std::vector<std::string>>();
+		} else {
+			manifest.aliases = std::vector<std::string>();
+		}
+
+		if (value.contains("dist") && value.contains("suite")) {
+			manifest.dist = value["dist"].get<std::string>();
+			manifest.suite = value["suite"].get<std::string>();
+		} else {
+			manifest.dist = "";
+			manifest.suite = "";
+		}
+
+		manifests.push_back(manifest);
+	}
+
+	for (auto &manifest : manifests) {
 		std::string release_path, packages_path;
 		std::map<std::string, std::string> release;
 		canister::parser::packages_info packages_info;
 
-		// Distribution repository
-		if (object.contains("dist") && object.contains("suite")) {
-			auto dist = object["dist"].get<std::string>();
-			auto suite = object["suite"].get<std::string>();
-
-			release_path = canister::http::fetch_dist_release(slug, uri, dist);
-			packages_path = canister::http::fetch_dist_packages(slug, uri, dist, suite);
+		if (manifest.dist.empty() && manifest.suite.empty()) {
+			release_path = canister::http::fetch_release(manifest.slug, manifest.uri);
+			packages_path = canister::http::fetch_packages(manifest.slug, manifest.uri);
 		} else {
-			release_path = canister::http::fetch_release(slug, uri);
-			packages_path = canister::http::fetch_packages(slug, uri);
+			// TODO: All these methods should only take `manifest` and get the values from there
+			release_path = canister::http::fetch_dist_release(manifest.slug, manifest.uri, manifest.dist);
+			packages_path = canister::http::fetch_dist_packages(manifest.slug, manifest.uri, manifest.dist, manifest.suite);
 		}
 
 		if (release_path == "cnstr-not-available") {
-			ws->send("failed:download_release:" + slug, uWS::TEXT);
-			canister::log::error("http", slug + " - failed to download release");
+			ws->send("failed:download_release:" + manifest.slug, uWS::TEXT);
+			canister::log::error("http", manifest.slug + " - failed to download release");
 			failed++;
 			continue;
 		}
 
 		if (packages_path == "cnstr-not-available") {
-			ws->send("failed:download_packages:" + slug, uWS::TEXT);
-			canister::log::error("http", slug + " - failed to download packages");
+			ws->send("failed:download_packages:" + manifest.slug, uWS::TEXT);
+			canister::log::error("http", manifest.slug + " - failed to download packages");
 			failed++;
 			continue;
 		}
 
 		if (release_path == "cnstr-cache-available" && packages_path == "cnstr-cache-available") {
-			canister::log::info("parser", slug + " - skipping due to cache");
+			canister::log::info("parser", manifest.slug + " - skipping due to cache");
 			cached++;
 			continue;
 		}
@@ -66,8 +88,8 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 			std::ifstream release_file(release_path);
 			if (!release_file.good()) {
 				release_file.close();
-				canister::log::error("parser", slug + " - release failed fs check");
-				ws->send("failed:parser_release:" + slug, uWS::TEXT);
+				canister::log::error("parser", manifest.slug + " - release failed fs check");
+				ws->send("failed:parser_release:" + manifest.slug, uWS::TEXT);
 				failed++;
 				continue;
 			}
@@ -78,21 +100,21 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 			release_file.close();
 
 			if (release_contents.empty()) {
-				ws->send("failed:parser_release:" + slug, uWS::TEXT);
-				canister::log::error("parser", slug + " - empty release");
+				ws->send("failed:parser_release:" + manifest.slug, uWS::TEXT);
+				canister::log::error("parser", manifest.slug + " - empty release");
 				failed++;
 				continue;
 			}
 
-			release = canister::parser::parse_release(slug, release_contents);
+			release = canister::parser::parse_release(manifest.slug, release_contents);
 		}
 
 		if (packages_path != "cnstr-cache-available") {
 			std::ifstream packages_file(packages_path);
 			if (!packages_file.good()) {
 				packages_file.close();
-				canister::log::error("parser", slug + " - packages failed fs check");
-				ws->send("failed:parser_packages:" + slug, uWS::TEXT);
+				canister::log::error("parser", manifest.slug + " - packages failed fs check");
+				ws->send("failed:parser_packages:" + manifest.slug, uWS::TEXT);
 				failed++;
 				continue;
 			}
@@ -103,26 +125,26 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 			packages_file.close();
 
 			if (packages_contents.empty()) {
-				ws->send("failed:parser_packages:" + slug, uWS::TEXT);
-				canister::log::error("parser", slug + " - empty packages");
+				ws->send("failed:parser_packages:" + manifest.slug, uWS::TEXT);
+				canister::log::error("parser", manifest.slug + " - empty packages");
 				failed++;
 				continue;
 			}
 
-			packages_info = canister::parser::parse_packages(slug, packages_contents);
+			packages_info = canister::parser::parse_packages(manifest.slug, packages_contents);
 		}
 
-		auto request = canister::http::sileo_endpoint(uri);
+		auto request = canister::http::sileo_endpoint(manifest.uri);
 		auto endpoint = request.has_value() ? request.value().str() : "";
 
 		// Ths dist and suite are blank strings because NULL is unacceptable
 		canister::db::write_repository({
-			.slug = slug,
-			.aliases = aliases,
-			.ranking = ranking,
+			.slug = manifest.slug,
+			.aliases = manifest.aliases,
+			.ranking = manifest.ranking,
 			.package_count = packages_info.count,
 			.sections = packages_info.sections,
-			.uri = uri,
+			.uri = manifest.uri,
 			.dist = "",
 			.suite = "",
 			.name = release["Name"],
@@ -137,16 +159,29 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 		for (auto &package_map : packages_info.data) {
 			// This means a package with the ID does not exist
 			auto exists = canister::db::package_exists(package_map["Package"]);
+
+			std::string price;
+			if (package_map["Tag"].find("cydia::commercial") != std::string::npos) {
+				if (endpoint.length() > 0) {
+					auto sileo_price_request = canister::http::sileo_endpoint_price(package_map["Package"], endpoint);
+					price = sileo_price_request.has_value() ? sileo_price_request.value() : "Paid";
+				} else {
+					price = "Paid";
+				}
+			} else {
+				price = "Free";
+			}
+
 			if (!exists.has_value()) {
 				canister::db::write_package({
 					.id = package_map["Package"],
-					.repo = slug,
-					.price = 0.00, // TODO: Price
+					.repo = manifest.slug,
+					.price = price,
 				});
 
 				auto header = package_map["Header"].length() > 0 ? package_map["Header"] : "";
 				auto tint_color = "";
-				auto udid = package_map["Package"] + "$$" + package_map["Version"] + "$$" + slug;
+				auto udid = package_map["Package"] + "$$" + package_map["Version"] + "$$" + manifest.slug;
 
 				// TODO: Support the new DepictionKit specification
 				canister::db::write_vpackage({
@@ -172,16 +207,16 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 					.size = package_map["Size"],
 				});
 			} else {
-				// Update the package's repository if the newer slug has a higher ranking
+				// Update the package's repository if the newer slug has a better ranking
 				auto db_slug = exists.value();
 				auto db_ranking = canister::db::repository_ranking(db_slug);
 
 				// Lower ranking is better
-				if (ranking < db_ranking) {
+				if (manifest.ranking < db_ranking) {
 					canister::db::write_package({
 						.id = package_map["Package"],
-						.repo = slug,
-						.price = 0.00, // TODO: Price
+						.repo = manifest.slug,
+						.price = price,
 					});
 				}
 
@@ -193,7 +228,7 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 
 				auto header = package_map["Header"].length() > 0 ? package_map["Header"] : "";
 				auto tint_color = "";
-				auto udid = package_map["Package"] + "$$" + package_map["Version"] + "$$" + slug;
+				auto udid = package_map["Package"] + "$$" + package_map["Version"] + "$$" + manifest.slug;
 
 				canister::db::write_vpackage({
 					.uuid = udid,
@@ -225,12 +260,12 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 			}
 		}
 
-		success++;
-	}
+		successful++;
 
-	ws->send("success:" + std::to_string(success), uWS::OpCode::TEXT);
-	ws->send("failed:" + std::to_string(failed), uWS::OpCode::TEXT);
-	ws->send("cached:" + std::to_string(cached), uWS::OpCode::TEXT);
+		ws->send("success:" + std::to_string(successful), uWS::OpCode::TEXT);
+		ws->send("failed:" + std::to_string(failed), uWS::OpCode::TEXT);
+		ws->send("cached:" + std::to_string(cached), uWS::OpCode::TEXT);
+	}
 }
 
 canister::parser::packages_info canister::parser::parse_packages(const std::string id, const std::string content) {
@@ -241,7 +276,7 @@ canister::parser::packages_info canister::parser::parse_packages(const std::stri
 	while ((start = content.find_first_not_of("\n\n", end)) != std::string::npos) {
 		end = content.find("\n\n", start);
 
-		// We want to do each package on a separate thread (hopefully BigBoss plays nicely) // TODO: Prettify
+		// We want to do each package on a separate thread (hopefully BigBoss plays nicely)
 		package_threads.push_back(std::async(std::launch::async, canister::parser::parse_apt_kv, std::stringstream(content.substr(start, end - start)), canister::util::packages_keys()));
 	}
 

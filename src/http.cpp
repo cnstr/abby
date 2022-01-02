@@ -112,6 +112,7 @@ std::list<std::string> canister::http::headers() {
 	headers.push_back("X-Firmware: 2.0");
 	headers.push_back("X-Machine: iPhone13,1");
 	headers.push_back("Cache-Control: no-cache");
+	headers.push_back("User-Agent: Canister/2.0; +https://tale.me/ua/canister");
 	headers.push_back("X-Unique-ID: canister-v2-unique-device-identifier");
 	return headers;
 }
@@ -160,6 +161,42 @@ std::optional<std::ostringstream> canister::http::fetch(const std::string url) {
 		}
 
 		return response_stream;
+	} catch (...) {
+		return std::nullopt;
+	}
+}
+
+std::optional<std::string> canister::http::sileo_endpoint_price(const std::string package, std::string uri) {
+	try {
+		curlpp::Easy request;
+		std::ostringstream response_stream;
+
+		uri.erase(std::remove(uri.begin(), uri.end(), '\n'), uri.end());
+
+		if (uri.ends_with("/")) {
+			uri.pop_back();
+		}
+
+		request.setOpt(new curlpp::options::Timeout(10));
+		request.setOpt(new curlpp::options::LowSpeedLimit(0));
+		request.setOpt(new curlpp::options::CustomRequest("POST"));
+		request.setOpt(new curlpp::options::Url(uri + "/package/" + package + "/info"));
+		request.setOpt(new curlpp::options::HttpHeader(canister::http::headers()));
+		request.setOpt(new curlpp::options::WriteStream(&response_stream));
+
+		request.perform();
+
+		auto http_code = curlpp::infos::ResponseCode::get(request);
+		if (http_code != 200) {
+			throw new std::runtime_error("invalid status code: " + http_code);
+		}
+
+		auto json = nlohmann::json::parse(response_stream.str());
+		if (!json.contains("price")) {
+			throw std::runtime_error("missing price field");
+		}
+
+		return json["price"].get<std::string>();
 	} catch (...) {
 		return std::nullopt;
 	}

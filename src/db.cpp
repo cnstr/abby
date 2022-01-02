@@ -35,7 +35,6 @@ std::optional<std::string> canister::db::package_exists(std::string id) {
 std::optional<std::string> canister::db::current_vpackage_version(std::string package) {
 	auto result = connection->execute(R""""(SELECT "version" FROM "VPackages" WHERE "package"=$1 AND "current_version"=true)"""", package);
 	if (result.empty()) {
-		canister::log::error("db", "unexpectedly recieved a vpackage request for a package that doesn't exist: " + package);
 		return std::nullopt;
 	} else {
 		return result[0]["version"].as<std::string>();

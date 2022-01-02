@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS "Repositories" (
 CREATE TABLE IF NOT EXISTS "Packages" (
 	"id" VARCHAR(255) NOT NULL PRIMARY KEY,
 	"repo" VARCHAR(255) NOT NULL,
-	"price" REAL NOT NULL,
+	"price" VARCHAR(255) NOT NULL,
 
 	FOREIGN KEY("repo") REFERENCES "Repositories"("slug")
 );
