@@ -10,12 +10,13 @@ RUN apt-get update \
 		libcurl4-openssl-dev \
 		libbz2-dev \
 		liblzma-dev \
+		libpq-dev \
 		libzstd-dev \
 		zlib1g-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
 COPY . .
-RUN meson setup staging \
+RUN CONTAINER=1 meson setup staging \
 	&& cd staging \
 	&& meson compile
 
@@ -25,9 +26,12 @@ RUN apt-get update \
 		libcurl4 \
 		libbz2-1.0 \
 		liblzma5 \
+		libpq5 \
 		libzstd1 \
-		zlib1g-dev \
+		zlib1g \
 	&& rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /build/staging/core ./
+COPY ./bootstrap.sql ./
+
 CMD ["./core"]
