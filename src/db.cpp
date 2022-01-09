@@ -44,9 +44,10 @@ std::optional<std::string> canister::db::current_vpackage_version(std::string pa
 std::int8_t canister::db::repository_ranking(std::string slug) {
 	auto result = connection->execute(R""""(SELECT "ranking" FROM "Repositories" WHERE slug=$1)"""", slug);
 	if (result.empty()) {
-		canister::log::error("db", "unexpectedly recieved no ranking for slug: " + slug);
+		auto message = "unexpectedly recieved no ranking for slug: " + slug;
+		canister::log::error("db", message);
+		sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_ERROR, "db", message.c_str()));
 		return 6; // This is higher than all rankings, causing it to be ignored where it's called
-		// sentry_capture_event("") // TODO: Sentry & Also probably Throw
 	} else {
 		return result[0]["ranking"].as<std::int8_t>();
 	}
