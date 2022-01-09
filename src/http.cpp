@@ -226,18 +226,25 @@ std::optional<std::ostringstream> canister::http::sileo_endpoint(const std::stri
 	}
 }
 
-std::string canister::http::fetch_release(const std::string slug, const std::string uri) {
-	try {
-		auto response_stream = canister::http::fetch(uri + "/Release");
+std::string canister::http::fetch_release(canister::parser::repo_manifest manifest) {
+	std::string url;
+	if (!manifest.dist.empty() && !manifest.suite.empty()) {
+		url = manifest.uri + "/dists/" + manifest.dist + "/Release";
+	} else {
+		url = manifest.uri + "/Release";
+	}
 
-		std::string file_name = canister::util::safe_fs_name(uri + "/Release");
+	try {
+		auto response_stream = canister::http::fetch(url);
+
+		std::string file_name = canister::util::safe_fs_name(url);
 		std::string file_path = canister::util::cache_path() + file_name;
 
 		if (!response_stream.has_value()) {
 			return std::string("cnstr-not-available");
 		}
 
-		canister::log::info("http", slug + " - hit: " + uri + "/Release");
+		canister::log::info("http", manifest.slug + " - hit: " + url);
 		std::string response = response_stream.value().str();
 		std::ifstream file(file_path);
 
@@ -257,13 +264,13 @@ std::string canister::http::fetch_release(const std::string slug, const std::str
 
 		return std::string(file_path);
 	} catch (curlpp::LogicError &exc) {
-		canister::log::error("http", slug + " - curl logic error: " + std::string(exc.what()));
+		canister::log::error("http", manifest.slug + " - curl logic error: " + std::string(exc.what()));
 		return std::string("cnstr-not-available");
 	} catch (curlpp::RuntimeError &exc) {
-		canister::log::error("http", slug + " - curl runtime error: " + std::string(exc.what()));
+		canister::log::error("http", manifest.slug + " - curl runtime error: " + std::string(exc.what()));
 		return std::string("cnstr-not-available");
 	} catch (std::exception &exc) {
-		auto message = slug + " - exception: " + std::string(exc.what());
+		auto message = manifest.slug + " - exception: " + std::string(exc.what());
 		canister::log::error("http", message);
 
 		sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_ERROR, "http", message.c_str()));
@@ -271,7 +278,7 @@ std::string canister::http::fetch_release(const std::string slug, const std::str
 	}
 }
 
-std::string canister::http::fetch_packages(const std::string slug, const std::string uri) {
+std::string canister::http::fetch_packages(canister::parser::repo_manifest manifest) {
 	std::string files[6] = {
 		"Packages.zst",
 		"Packages.xz",
@@ -282,18 +289,25 @@ std::string canister::http::fetch_packages(const std::string slug, const std::st
 	};
 
 	for (auto &repo_file : files) {
-		std::string final_path = canister::util::cache_path() + slug + ".Packages";
+		std::string final_path = canister::util::cache_path() + manifest.slug + ".Packages";
+		std::string url;
+
+		if (!manifest.dist.empty() && !manifest.suite.empty()) {
+			url = manifest.uri + "/dists/" + manifest.dist + manifest.suite + "/binary-iphoneos-arm/" + repo_file;
+		} else {
+			url = manifest.uri + "/" + repo_file;
+		}
 
 		try {
-			auto response_stream = canister::http::fetch(uri + "/" + repo_file);
-			std::string file_name = canister::util::safe_fs_name(uri + "/" + repo_file);
+			auto response_stream = canister::http::fetch(url);
+			std::string file_name = canister::util::safe_fs_name(url);
 			std::string file_path = canister::util::cache_path() + file_name;
 
 			if (!response_stream.has_value()) {
 				continue;
 			}
 
-			canister::log::info("http", slug + " - hit: " + uri + "/" + repo_file);
+			canister::log::info("http", manifest.slug + " - hit: " + url);
 			std::string response = response_stream.value().str();
 			std::ifstream file(file_path);
 
@@ -313,15 +327,15 @@ std::string canister::http::fetch_packages(const std::string slug, const std::st
 
 			// Decompress (I wish C++ had switch statements this wouldn't look so ugly)
 			if (repo_file == "Packages.zst") {
-				canister::decompress::zstd(slug, file_path, final_path);
+				canister::decompress::zstd(manifest.slug, file_path, final_path);
 			} else if (repo_file == "Packages.xz") {
-				canister::decompress::xz(slug, file_path, final_path);
+				canister::decompress::xz(manifest.slug, file_path, final_path);
 			} else if (repo_file == "Packages.bz2") {
-				canister::decompress::bz2(slug, file_path, final_path);
+				canister::decompress::bz2(manifest.slug, file_path, final_path);
 			} else if (repo_file == "Packages.lzma") {
-				canister::decompress::lzma(slug, file_path, final_path);
+				canister::decompress::lzma(manifest.slug, file_path, final_path);
 			} else if (repo_file == "Packages.gz") {
-				canister::decompress::gz(slug, file_path, final_path);
+				canister::decompress::gz(manifest.slug, file_path, final_path);
 			} else if (repo_file == "Packages") {
 				std::filesystem::rename(file_path, final_path);
 			}
@@ -341,13 +355,13 @@ std::string canister::http::fetch_packages(const std::string slug, const std::st
 			file_check.close();
 			return final_path;
 		} catch (curlpp::LogicError &exc) {
-			canister::log::error("http", slug + " - curl logic error: " + std::string(exc.what()));
+			canister::log::error("http", manifest.slug + " - curl logic error: " + std::string(exc.what()));
 			return std::string("cnstr-not-available");
 		} catch (curlpp::RuntimeError &exc) {
-			canister::log::error("http", slug + " - curl runtime error: " + std::string(exc.what()));
+			canister::log::error("http", manifest.slug + " - curl runtime error: " + std::string(exc.what()));
 			return std::string("cnstr-not-available");
 		} catch (std::exception &exc) {
-			auto message = slug + " - exception: " + std::string(exc.what());
+			auto message = manifest.slug + " - exception: " + std::string(exc.what());
 			canister::log::error("http", message);
 
 			sentry_capture_event(sentry_value_new_message_event(SENTRY_LEVEL_ERROR, "http", message.c_str()));
@@ -356,14 +370,4 @@ std::string canister::http::fetch_packages(const std::string slug, const std::st
 	}
 
 	return std::string("cnstr-not-available");
-}
-
-std::string canister::http::fetch_dist_release(const std::string slug, const std::string uri, const std::string dist) {
-	auto url = uri + "/dists/" + dist;
-	return canister::http::fetch_release(slug, url);
-}
-
-std::string canister::http::fetch_dist_packages(const std::string slug, const std::string uri, const std::string dist, const std::string suite) {
-	auto url = uri + "/dists/" + dist + "/" + suite + "/binary-iphoneos-arm";
-	return canister::http::fetch_packages(slug, url);
 }

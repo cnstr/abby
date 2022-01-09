@@ -113,19 +113,6 @@ namespace canister {
 		int verrevcmp(const char *a, const char *b);
 	}
 
-	namespace http {
-		uWS::App http_server();
-		std::list<std::string> headers();
-		std::optional<nlohmann::json> manifest();
-		std::optional<std::ostringstream> fetch(const std::string url);
-		std::optional<std::ostringstream> sileo_endpoint(const std::string uri);
-		std::optional<std::string> sileo_endpoint_price(const std::string package, std::string uri);
-		std::string fetch_release(const std::string slug, const std::string uri);
-		std::string fetch_packages(const std::string slug, const std::string uri);
-		std::string fetch_dist_release(const std::string slug, const std::string uri, const std::string dist);
-		std::string fetch_dist_packages(const std::string slug, const std::string uri, const std::string dist, const std::string suite);
-	}
-
 	namespace log {
 		void info(const std::string location, const std::string message);
 		void error(const std::string location, const std::string message);
@@ -151,6 +138,17 @@ namespace canister {
 		std::map<std::string, std::string> parse_release(const std::string id, const std::string content);
 		canister::parser::packages_info parse_packages(const std::string id, const std::string content);
 		std::map<std::string, std::string> parse_apt_kv(std::stringstream stream, std::vector<std::string> key_validator);
+	}
+
+	namespace http {
+		uWS::App http_server();
+		std::list<std::string> headers();
+		std::optional<nlohmann::json> manifest();
+		std::optional<std::ostringstream> fetch(const std::string url);
+		std::optional<std::ostringstream> sileo_endpoint(const std::string uri);
+		std::optional<std::string> sileo_endpoint_price(const std::string package, std::string uri);
+		std::string fetch_release(canister::parser::repo_manifest manifest);
+		std::string fetch_packages(canister::parser::repo_manifest manifest);
 	}
 
 	namespace util {

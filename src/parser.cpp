@@ -54,14 +54,8 @@ void canister::parser::parse_manifest(const nlohmann::json data, uWS::WebSocket<
 		std::map<std::string, std::string> release;
 		canister::parser::packages_info packages_info;
 
-		if (manifest.dist.empty() && manifest.suite.empty()) {
-			release_path = canister::http::fetch_release(manifest.slug, manifest.uri);
-			packages_path = canister::http::fetch_packages(manifest.slug, manifest.uri);
-		} else {
-			// TODO: All these methods should only take `manifest` and get the values from there
-			release_path = canister::http::fetch_dist_release(manifest.slug, manifest.uri, manifest.dist);
-			packages_path = canister::http::fetch_dist_packages(manifest.slug, manifest.uri, manifest.dist, manifest.suite);
-		}
+		release_path = canister::http::fetch_release(manifest);
+		packages_path = canister::http::fetch_packages(manifest);
 
 		if (release_path == "cnstr-not-available") {
 			ws->send("failed:download_release:" + manifest.slug, uWS::TEXT);
